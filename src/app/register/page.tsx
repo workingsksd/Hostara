@@ -5,17 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [role, setRole] = useState("");
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real app, you'd have registration logic here.
     // For this mock, we'll just simulate a registration and log the user in.
     localStorage.setItem("authenticated", "true");
+    localStorage.setItem("userRole", role);
     router.push("/");
   };
 
@@ -39,6 +43,20 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+                <Select onValueChange={setRole} required>
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="chef">Chef</SelectItem>
+                    <SelectItem value="guest">Guest</SelectItem>
+                  </SelectContent>
+                </Select>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
