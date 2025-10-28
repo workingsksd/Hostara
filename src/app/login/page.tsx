@@ -9,10 +9,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import withAuth from "@/components/withAuth";
 
 type EntityType = "Hotel" | "Lodge" | "Restaurant";
 
-export default function LoginPage() {
+function LoginPage() {
   const router = useRouter();
   const [entityType, setEntityType] = useState<EntityType>("Hotel");
 
@@ -74,3 +75,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default withAuth(LoginPage);

@@ -10,10 +10,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import withAuth from "@/components/withAuth";
 
 type EntityType = "Hotel" | "Lodge" | "Restaurant";
 
-export default function RegisterPage() {
+function RegisterPage() {
   const router = useRouter();
   const [role, setRole] = useState("");
   const [entityType, setEntityType] = useState<EntityType>("Hotel");
@@ -98,3 +99,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+export default withAuth(RegisterPage);

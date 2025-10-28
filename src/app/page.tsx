@@ -184,4 +184,3 @@ function StatCard({ title, value, icon, description, variant }: { title: string,
 }
 
 export default withAuth(DashboardPage);
-

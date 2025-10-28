@@ -13,12 +13,17 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 
     useEffect(() => {
       const authenticated = localStorage.getItem('authenticated') === 'true';
+      if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+        setIsAuthenticated(true); // Allow access to login/register pages
+        return;
+      }
+
       if (!authenticated) {
         router.replace('/login');
       } else {
         setIsAuthenticated(true);
       }
-    }, [router]);
+    }, [router, pathname]);
 
     if (isAuthenticated === null) {
       return (
@@ -29,7 +34,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     }
     
     // The login and register pages should not have the AppLayout
-    if (pathname === '/login' || pathname === '/register') {
+    if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
         return <WrappedComponent {...props} />;
     }
 
