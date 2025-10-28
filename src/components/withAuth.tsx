@@ -2,16 +2,16 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout/app-layout';
 
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
   const AuthComponent = (props: P) => {
     const router = useRouter();
+    const pathname = usePathname();
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     useEffect(() => {
-      // This check runs only on the client side
       const authenticated = localStorage.getItem('authenticated') === 'true';
       if (!authenticated) {
         router.replace('/login');
@@ -21,12 +21,16 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     }, [router]);
 
     if (isAuthenticated === null) {
-      // You can render a loading spinner here while checking auth status
       return (
         <div className="flex items-center justify-center min-h-screen">
           <p>Loading...</p>
         </div>
       );
+    }
+    
+    // The login and register pages should not have the AppLayout
+    if (pathname === '/login' || pathname === '/register') {
+        return <WrappedComponent {...props} />;
     }
 
     return (
@@ -42,4 +46,3 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 };
 
 export default withAuth;
-
