@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Building, BedDouble, UtensilsCrossed } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type EntityType = "Hotel" | "Lodge" | "Restaurant";
@@ -29,34 +28,29 @@ export default function RegisterPage() {
     router.push("/");
   };
 
-  const entityTypes: { name: EntityType; icon: React.ReactNode }[] = [
-    { name: "Hotel", icon: <Building className="mr-2" /> },
-    { name: "Lodge", icon: <BedDouble className="mr-2" /> },
-    { name: "Restaurant", icon: <UtensilsCrossed className="mr-2" /> },
-  ];
+  const entityTypes: EntityType[] = ["Hotel", "Lodge", "Restaurant"];
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">
       <Card className="w-full max-w-md bg-card/60 backdrop-blur-lg border-border/20 shadow-2xl shadow-primary/10">
-        <div className="p-6 pb-0">
-          <div className="grid grid-cols-3 gap-2 mb-6">
-            {entityTypes.map((type) => (
-              <Button
-                key={type.name}
-                variant="outline"
-                onClick={() => setEntityType(type.name)}
-                className={cn(
-                  "py-6 flex-col h-auto bg-transparent transition-all duration-200 border-2 backdrop-blur-sm",
-                  entityType === type.name
-                    ? "bg-primary/20 border-primary text-primary-foreground"
-                    : "hover:bg-primary/10 border-border/50 text-muted-foreground"
-                )}
-              >
-                {type.icon}
-                <span>{type.name}</span>
-              </Button>
-            ))}
-          </div>
+        <div className="p-6 pb-4">
+            <div className="flex w-full rounded-md bg-muted/50 p-1">
+                {entityTypes.map((type) => (
+                <Button
+                    key={type}
+                    variant="ghost"
+                    onClick={() => setEntityType(type)}
+                    className={cn(
+                    "w-full transition-all duration-200",
+                    entityType === type
+                        ? "bg-background shadow-sm text-foreground"
+                        : "bg-transparent text-muted-foreground hover:bg-background/50"
+                    )}
+                >
+                    {type}
+                </Button>
+                ))}
+            </div>
         </div>
         <form onSubmit={handleRegister}>
           <CardHeader className="text-center pt-0">
