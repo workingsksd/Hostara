@@ -27,6 +27,7 @@ function RegisterPage() {
     localStorage.setItem("userRole", role);
     localStorage.setItem("entityType", entityType);
     router.push("/");
+    router.refresh();
   };
 
   const entityTypes: EntityType[] = ["Hotel", "Lodge", "Restaurant"];

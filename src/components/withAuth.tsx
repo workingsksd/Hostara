@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { AppLayout } from '@/components/layout/app-layout';
 
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
   const AuthComponent = (props: P) => {
@@ -12,37 +11,52 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     useEffect(() => {
+      // This is a mock authentication check. In a real app, you'd verify a token.
       const authenticated = localStorage.getItem('authenticated') === 'true';
-      if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
-        setIsAuthenticated(true); // Allow access to login/register pages
-        return;
-      }
+      const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
 
-      if (!authenticated) {
-        router.replace('/login');
+      if (isAuthPage) {
+        if (authenticated) {
+          // If user is on login/register but already logged in, redirect to home
+          router.replace('/');
+        } else {
+          // Allow access to login/register if not authenticated
+          setIsAuthenticated(false);
+        }
       } else {
-        setIsAuthenticated(true);
+        if (!authenticated) {
+          // If user is not on an auth page and not logged in, redirect to login
+          router.replace('/login');
+        } else {
+          // Allow access to protected page if authenticated
+          setIsAuthenticated(true);
+        }
       }
     }, [router, pathname]);
 
+    // Render a loading state while checking auth
     if (isAuthenticated === null) {
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen bg-background">
           <p>Loading...</p>
         </div>
       );
     }
-    
-    // The login and register pages should not have the AppLayout
-    if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+
+    // If on an auth page and not authenticated, show the page.
+    if (isAuthPage && !isAuthenticated) {
         return <WrappedComponent {...props} />;
     }
 
-    return (
-      <AppLayout>
-        <WrappedComponent {...props} />
-      </AppLayout>
-    );
+    // If on a protected page and authenticated, show the page.
+    if (!isAuthPage && isAuthenticated) {
+        return <WrappedComponent {...props} />;
+    }
+
+    // Otherwise, we are likely in a redirect state, so render nothing to avoid flashes.
+    return null;
   };
 
   AuthComponent.displayName = `withAuth(${(WrappedComponent.displayName || WrappedComponent.name || 'Component')})`;

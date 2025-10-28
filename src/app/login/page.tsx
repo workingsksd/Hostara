@@ -23,6 +23,7 @@ function LoginPage() {
     // For this mock, we'll just simulate a login.
     localStorage.setItem("authenticated", "true");
     router.push("/");
+    router.refresh(); // Force a refresh to ensure withAuth re-evaluates
   };
   
   const entityTypes: EntityType[] = ["Hotel", "Lodge", "Restaurant"];
