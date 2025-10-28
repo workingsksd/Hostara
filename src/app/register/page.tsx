@@ -36,8 +36,8 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-primary/20 p-4">
-      <Card className="w-full max-w-md mx-4 bg-card/60 backdrop-blur-lg border-border/20 shadow-2xl shadow-primary/10">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">
+      <Card className="w-full max-w-md bg-card/60 backdrop-blur-lg border-border/20 shadow-2xl shadow-primary/10">
         <div className="p-6 pb-0">
           <div className="grid grid-cols-3 gap-2 mb-6">
             {entityTypes.map((type) => (
