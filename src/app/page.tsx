@@ -1,5 +1,6 @@
 
-
+'use client'
+import withAuth from "@/components/withAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +43,7 @@ const maintenanceTasks = [
   { room: "Room 101", issue: "Wi-Fi Down", priority: "Medium" },
 ];
 
-export default function DashboardPage() {
+function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -181,3 +182,6 @@ function StatCard({ title, value, icon, description, variant }: { title: string,
     </Card>
   );
 }
+
+export default withAuth(DashboardPage);
+

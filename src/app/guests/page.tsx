@@ -1,6 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function GuestsPage() {
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import withAuth from "@/components/withAuth";
+
+function GuestsPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold font-headline mb-6">Guest & Booking Management</h1>
@@ -15,3 +19,5 @@ export default function GuestsPage() {
     </div>
   );
 }
+
+export default withAuth(GuestsPage);

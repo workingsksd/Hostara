@@ -1,6 +1,10 @@
-import { PredictiveInventory } from "./predictive-inventory";
 
-export default function InventoryPage() {
+"use client";
+
+import { PredictiveInventory } from "./predictive-inventory";
+import withAuth from "@/components/withAuth";
+
+function InventoryPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold font-headline">Inventory & Stock Management</h1>
@@ -11,3 +15,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+export default withAuth(InventoryPage);

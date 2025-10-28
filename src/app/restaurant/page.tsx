@@ -1,6 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function RestaurantPage() {
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import withAuth from "@/components/withAuth";
+
+function RestaurantPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold font-headline mb-6">Restaurant & Room Service</h1>
@@ -15,3 +19,5 @@ export default function RestaurantPage() {
     </div>
   );
 }
+
+export default withAuth(RestaurantPage);

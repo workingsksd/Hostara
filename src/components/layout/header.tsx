@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -20,9 +21,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { placeholderImages } from "@/lib/placeholder-images"
+import { useRouter } from "next/navigation"
 
 export function AppHeader() {
   const managerAvatar = placeholderImages.find(p => p.id === 'user-avatar-4');
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem("authenticated");
+    router.push("/login");
+  };
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-primary via-primary to-accent/80 px-4 md:px-6">
       <SidebarTrigger className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground" />
@@ -55,7 +64,7 @@ export function AppHeader() {
             <span>Settings</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
           </DropdownMenuItem>

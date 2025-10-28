@@ -1,6 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function BillingPage() {
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import withAuth from "@/components/withAuth";
+
+function BillingPage() {
   return (
     <div>
       <h1 className="text-3xl font-bold font-headline mb-6">Billing & Accounting</h1>
@@ -15,3 +19,5 @@ export default function BillingPage() {
     </div>
   );
 }
+
+export default withAuth(BillingPage);
