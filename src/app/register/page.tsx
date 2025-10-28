@@ -36,8 +36,8 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-md mx-4 bg-card/80 backdrop-blur-sm border-border/30">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background to-primary/20 p-4">
+      <Card className="w-full max-w-md mx-4 bg-card/60 backdrop-blur-lg border-border/20 shadow-2xl shadow-primary/10">
         <div className="p-6 pb-0">
           <div className="grid grid-cols-3 gap-2 mb-6">
             {entityTypes.map((type) => (
@@ -46,7 +46,7 @@ export default function RegisterPage() {
                 variant="outline"
                 onClick={() => setEntityType(type.name)}
                 className={cn(
-                  "py-6 flex-col h-auto bg-transparent transition-all duration-200 border-2",
+                  "py-6 flex-col h-auto bg-transparent transition-all duration-200 border-2 backdrop-blur-sm",
                   entityType === type.name
                     ? "bg-primary/20 border-primary text-primary-foreground"
                     : "hover:bg-primary/10 border-border/50 text-muted-foreground"
@@ -63,25 +63,25 @@ export default function RegisterPage() {
             <CardTitle className="text-2xl font-headline">
               Register a new {entityType}
             </CardTitle>
-            <CardDescription>Fill in the details below to create an account</CardDescription>
+            <CardDescription>Fill in the details below to create your account</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Your Name</Label>
-              <Input id="name" type="text" placeholder="John Doe" required />
+              <Input id="name" type="text" placeholder="John Doe" required className="bg-background/50" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="manager@example.com" required />
+              <Input id="email" type="email" placeholder="manager@example.com" required className="bg-background/50" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
+              <Input id="password" type="password" required className="bg-background/50" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Your Role</Label>
                 <Select onValueChange={setRole} required>
-                  <SelectTrigger id="role">
+                  <SelectTrigger id="role" className="bg-background/50">
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -95,8 +95,8 @@ export default function RegisterPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button className="w-full" type="submit">Register</Button>
-            <div className="text-sm text-center">
-              Already have an account? <Link href="/login" className="underline">Login here</Link>
+            <div className="text-sm text-center text-muted-foreground">
+              Already have an account? <Link href="/login" className="underline text-foreground hover:text-primary-foreground">Login here</Link>
             </div>
           </CardFooter>
         </form>
