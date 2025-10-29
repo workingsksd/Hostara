@@ -181,7 +181,7 @@ function DashboardPage() {
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <Wrench className="text-destructive" />
-                Maintenance & Alerts
+                Maintenance &amp; Alerts
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
