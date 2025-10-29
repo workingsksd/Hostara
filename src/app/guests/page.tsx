@@ -301,10 +301,10 @@ function GuestsPage() {
                     <p className="w-3/5 font-medium">{format(new Date(selectedBooking.checkOut), "PPP")}</p>
                 </div>
                  <div className="flex items-center">
-                    <p className="w-2/5 text-muted-foreground">Status</p>
-                    <p className="w-3/5 font-medium">
+                    <div className="w-2/5 text-muted-foreground">Status</div>
+                    <div className="w-3/5 font-medium">
                         <Badge variant={statusVariant[selectedBooking.status] || 'default'}>{selectedBooking.status}</Badge>
-                    </p>
+                    </div>
                 </div>
                 <div className="flex items-center">
                     <p className="w-2/5 text-muted-foreground">Room</p>
