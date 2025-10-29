@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Sidebar,
@@ -18,7 +19,10 @@ import {
   UsersRound,
   CreditCard,
   Building2,
-  ChevronDown
+  ChevronDown,
+  LineChart,
+  Plug,
+  Shield
 } from "lucide-react"
 
 export function AppSidebar() {
@@ -87,6 +91,30 @@ export function AppSidebar() {
               <Link href="/billing">
                 <CreditCard />
                 <span>Billing</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Reporting">
+              <Link href="/reporting">
+                <LineChart />
+                <span>Reporting</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Integrations">
+              <Link href="/integrations">
+                <Plug />
+                <span>Integrations</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Security">
+              <Link href="/security">
+                <Shield />
+                <span>Security</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
