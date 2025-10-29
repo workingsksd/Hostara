@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BedDouble, BookOpenCheck, Bot, Building, ChefHat, UtensilsCrossed, Users, Wrench } from "lucide-react";
+import { BedDouble, BookOpenCheck, Bot, Building, ChefHat, UtensilsCrossed, Users, Wrench, Sparkles, Trash2, Clock } from "lucide-react";
 import { placeholderImages } from "@/lib/placeholder-images";
 import { BookingsChart } from "@/components/dashboard/bookings-chart";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -65,41 +65,72 @@ function DashboardPage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-card/60 backdrop-blur-sm border border-border/20 shadow-[0_8px_32px_0_hsl(var(--primary)/0.2)]">
-            <CardHeader>
-              <CardTitle className="font-headline">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Users className="text-muted-foreground" />
-                  <span className="text-sm">Total Guests</span>
+          <div className="space-y-6">
+            <Card className="bg-card/60 backdrop-blur-sm border border-border/20 shadow-[0_8px_32px_0_hsl(var(--primary)/0.2)]">
+              <CardHeader>
+                <CardTitle className="font-headline">Quick Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Users className="text-muted-foreground" />
+                    <span className="text-sm">Total Guests</span>
+                  </div>
+                  <span className="font-bold text-lg">245</span>
                 </div>
-                <span className="font-bold text-lg">245</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <BookOpenCheck className="text-muted-foreground" />
-                  <span className="text-sm">Today's Bookings</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <BookOpenCheck className="text-muted-foreground" />
+                    <span className="text-sm">Today's Bookings</span>
+                  </div>
+                  <span className="font-bold text-lg">42</span>
                 </div>
-                <span className="font-bold text-lg">42</span>
-              </div>
-               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <ChefHat className="text-muted-foreground" />
-                  <span className="text-sm">Restaurant Orders</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <ChefHat className="text-muted-foreground" />
+                    <span className="text-sm">Restaurant Orders</span>
+                  </div>
+                  <span className="font-bold text-lg">112</span>
                 </div>
-                <span className="font-bold text-lg">112</span>
-              </div>
-               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Bot className="text-muted-foreground" />
-                  <span className="text-sm">Low Stock Alerts</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Bot className="text-muted-foreground" />
+                    <span className="text-sm">Low Stock Alerts</span>
+                  </div>
+                  <span className="font-bold text-lg text-destructive">5</span>
                 </div>
-                <span className="font-bold text-lg text-destructive">5</span>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/60 backdrop-blur-sm border border-border/20 shadow-[0_8px_32px_0_hsl(var(--primary)/0.2)]">
+              <CardHeader>
+                  <CardTitle className="font-headline">Housekeeping Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-green-400">
+                          <Sparkles />
+                          <span className="text-sm text-foreground">Rooms Ready</span>
+                      </div>
+                      <span className="font-bold text-lg">42</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-yellow-400">
+                          <Clock />
+                          <span className="text-sm text-foreground">In Progress</span>
+                      </div>
+                      <span className="font-bold text-lg">3</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-red-400">
+                          <Trash2 />
+                          <span className="text-sm text-foreground">Needs Cleaning</span>
+                      </div>
+                      <span className="font-bold text-lg text-destructive">5</span>
+                  </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">

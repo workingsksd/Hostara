@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -33,7 +34,7 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2 } from 'lucide-react';
+import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress';
@@ -44,6 +45,7 @@ type Room = {
   name: string;
   status: RoomStatus;
   assignedTo: StaffName | null;
+  lastCleanedBy: StaffName | null;
   avatar: string | undefined;
   guest: string | null;
 }
@@ -54,6 +56,7 @@ const initialRooms: Room[] = [
     name: 'Room 101',
     status: 'Ready',
     assignedTo: null,
+    lastCleanedBy: 'Maria Garcia',
     guest: 'John Doe',
     avatar: undefined
   },
@@ -62,6 +65,7 @@ const initialRooms: Room[] = [
     name: 'Room 102',
     status: 'Dirty',
     assignedTo: null,
+    lastCleanedBy: 'Chloe Nguyen',
     avatar: undefined,
     guest: null
   },
@@ -70,6 +74,7 @@ const initialRooms: Room[] = [
     name: 'Lodge 5A',
     status: 'Ready',
     assignedTo: null,
+    lastCleanedBy: 'Liam Gallagher',
     guest: 'Sophia Loren',
     avatar: undefined
   },
@@ -78,6 +83,7 @@ const initialRooms: Room[] = [
     name: 'Room 201',
     status: 'Cleaning in Progress',
     assignedTo: 'Liam Gallagher',
+    lastCleanedBy: 'Maria Garcia',
     avatar: placeholderImages.find((p) => p.id === 'user-avatar-3')?.imageUrl,
     guest: null
   },
@@ -86,6 +92,7 @@ const initialRooms: Room[] = [
     name: 'Suite 4B',
     status: 'Dirty',
     assignedTo: null,
+    lastCleanedBy: 'Chloe Nguyen',
     avatar: undefined,
     guest: null
   },
@@ -94,6 +101,7 @@ const initialRooms: Room[] = [
     name: 'Room 203',
     status: 'Ready',
     assignedTo: null,
+    lastCleanedBy: 'Maria Garcia',
     guest: null,
     avatar: undefined
   },
@@ -102,6 +110,7 @@ const initialRooms: Room[] = [
     name: 'Room 301',
     status: 'Ready',
     assignedTo: null,
+    lastCleanedBy: 'Liam Gallagher',
     guest: 'Eleanor Vance',
     avatar: undefined
   },
@@ -110,6 +119,7 @@ const initialRooms: Room[] = [
     name: 'Lodge 2C',
     status: 'Dirty',
     assignedTo: null,
+    lastCleanedBy: 'Maria Garcia',
     guest: 'Marcus Thorne',
     avatar: undefined
   },
@@ -182,6 +192,26 @@ function HousekeepingPage() {
       setSelectedStaff(null);
     }, 1000);
   };
+  
+  const handleMarkAsReady = (roomId: string) => {
+    setRooms(prevRooms => prevRooms.map(room => {
+        if (room.id === roomId) {
+            toast({
+                title: `Room ${room.name} is Ready`,
+                description: 'The room is now available for guests.',
+                className: 'bg-green-500 text-white'
+            });
+            return { 
+                ...room, 
+                status: 'Ready', 
+                lastCleanedBy: room.assignedTo, 
+                assignedTo: null,
+                avatar: undefined 
+            };
+        }
+        return room;
+    }));
+  }
 
   const filteredRooms =
     filter === 'All'
@@ -255,13 +285,27 @@ function HousekeepingPage() {
                       </p>
                     </div>
                   </div>
+                ) : room.status === 'Ready' && room.lastCleanedBy ? (
+                    <div className="text-sm text-muted-foreground italic flex items-center gap-2">
+                       <Sparkles className="h-4 w-4 text-green-400" />
+                       Cleaned by {room.lastCleanedBy}
+                    </div>
                 ) : (
                   <div className="text-sm text-muted-foreground italic">
                     Unassigned
                   </div>
                 )}
               </CardContent>
-              <div className="p-6 pt-0">
+              <CardFooter className="pt-0">
+                {room.status === 'Cleaning in Progress' ? (
+                     <Button 
+                      className="w-full" 
+                      variant="default"
+                      onClick={() => handleMarkAsReady(room.id)}
+                    >
+                      <CheckCircle className="mr-2" /> Mark as Ready
+                    </Button>
+                ) : (
                 <Dialog open={assigningRoom?.id === room.id} onOpenChange={(isOpen) => !isOpen && setAssigningRoom(null)}>
                   <DialogTrigger asChild>
                     <Button 
@@ -303,7 +347,8 @@ function HousekeepingPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-              </div>
+                )}
+              </CardFooter>
             </Card>
           ))}
         </div>
