@@ -6,13 +6,21 @@ import withAuth from '@/components/withAuth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, RefreshCw, UserCheck } from 'lucide-react';
+import { Camera, RefreshCw, UserCheck, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { extractIdInfo, OcrOutput } from '@/ai/flows/kyc-ocr-flow';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 function KYCScannerPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isResultOpen, setIsResultOpen] = useState(false);
+  const [ocrResult, setOcrResult] = useState<OcrOutput | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -27,7 +35,7 @@ function KYCScannerPage() {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
 
         if (videoRef.current) {
@@ -54,6 +62,46 @@ function KYCScannerPage() {
     }
   }, [toast]);
 
+  const handleScanId = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    setIsScanning(true);
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+    const imageDataUri = canvas.toDataURL('image/jpeg');
+
+    try {
+      const result = await extractIdInfo({ imageDataUri });
+      setOcrResult(result);
+      setIsResultOpen(true);
+    } catch (error) {
+      console.error('OCR failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Scan Failed',
+        description: 'Could not extract information from the ID. Please try again.',
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleConfirmGuest = () => {
+    // Here you would typically save the guest data and link it to a new booking
+    toast({
+        title: "Guest Confirmed",
+        description: `${ocrResult?.name} has been successfully verified and added.`
+    })
+    setIsResultOpen(false);
+    setOcrResult(null);
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -79,15 +127,25 @@ function KYCScannerPage() {
             
             <div className="aspect-video w-full max-w-2xl mx-auto bg-muted/50 rounded-lg overflow-hidden border border-border/20 relative shadow-inner">
                 <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-[85%] h-[70%] border-4 border-dashed border-primary/50 rounded-xl" />
                 </div>
             </div>
+            <canvas ref={canvasRef} className="hidden" />
 
             <div className="flex justify-center gap-4">
-              <Button size="lg" disabled={!hasCameraPermission}>
-                <Camera className="mr-2" />
-                Scan ID
+              <Button size="lg" disabled={!hasCameraPermission || isScanning} onClick={handleScanId}>
+                {isScanning ? (
+                    <>
+                        <Loader2 className="mr-2 animate-spin" />
+                        Scanning...
+                    </>
+                ) : (
+                    <>
+                        <Camera className="mr-2" />
+                        Scan ID
+                    </>
+                )}
               </Button>
               <Button size="lg" variant="secondary" disabled={!hasCameraPermission}>
                 <UserCheck className="mr-2" />
@@ -97,6 +155,41 @@ function KYCScannerPage() {
           </CardContent>
         </Card>
       </div>
+
+       <Dialog open={isResultOpen} onOpenChange={setIsResultOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Guest Details</DialogTitle>
+            <DialogDescription>
+              Review the information extracted from the ID card. Edit if necessary before confirming.
+            </DialogDescription>
+          </DialogHeader>
+          {ocrResult && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" defaultValue={ocrResult.name} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="idNumber">ID Number</Label>
+                <Input id="idNumber" defaultValue={ocrResult.idNumber} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dob">Date of Birth</Label>
+                <Input id="dob" defaultValue={ocrResult.dateOfBirth} />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input id="address" defaultValue={ocrResult.address} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsResultOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmGuest}>Confirm Guest</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
