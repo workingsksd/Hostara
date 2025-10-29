@@ -16,6 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import withAuth from '@/components/withAuth';
 import { AppLayout } from '@/components/layout/app-layout';
@@ -26,13 +37,13 @@ import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2 } from 'lucide-r
 import { useToast } from '@/hooks/use-toast';
 
 type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress';
-type Staff = 'Maria Garcia' | 'Liam Gallagher' | 'Unassigned';
+type StaffName = 'Maria Garcia' | 'Liam Gallagher' | 'Chloe Nguyen' | 'Unassigned';
 
 type Room = {
   id: string;
   name: string;
   status: RoomStatus;
-  assignedTo: Staff | null;
+  assignedTo: StaffName | null;
   avatar: string | undefined;
   guest: string | null;
 }
@@ -50,8 +61,8 @@ const initialRooms: Room[] = [
     id: 'room-102',
     name: 'Room 102',
     status: 'Dirty',
-    assignedTo: 'Maria Garcia',
-    avatar: placeholderImages.find((p) => p.id === 'user-avatar-2')?.imageUrl,
+    assignedTo: null,
+    avatar: undefined,
     guest: null
   },
   {
@@ -74,8 +85,8 @@ const initialRooms: Room[] = [
     id: 'room-202',
     name: 'Suite 4B',
     status: 'Dirty',
-    assignedTo: 'Maria Garcia',
-    avatar: placeholderImages.find((p) => p.id === 'user-avatar-2')?.imageUrl,
+    assignedTo: null,
+    avatar: undefined,
     guest: null
   },
   {
@@ -102,6 +113,12 @@ const initialRooms: Room[] = [
     guest: 'Marcus Thorne',
     avatar: undefined
   },
+];
+
+const staffList: { name: StaffName, avatarId: string }[] = [
+    { name: 'Maria Garcia', avatarId: 'user-avatar-2' },
+    { name: 'Liam Gallagher', avatarId: 'user-avatar-3' },
+    { name: 'Chloe Nguyen', avatarId: 'user-avatar-1' },
 ];
 
 const statusConfig: {
@@ -131,24 +148,38 @@ const statusConfig: {
 function HousekeepingPage() {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [filter, setFilter] = useState('All');
-  const [assigningRoomId, setAssigningRoomId] = useState<string | null>(null);
+  const [assigningRoom, setAssigningRoom] = useState<Room | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<StaffName | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
   const { toast } = useToast();
 
-  const handleAssignCleaning = (roomId: string) => {
-    setAssigningRoomId(roomId);
+  const handleAssignConfirm = () => {
+    if (!assigningRoom || !selectedStaff) return;
+    
+    setIsAssigning(true);
     // Simulate API call
     setTimeout(() => {
+      const assignedStaffMember = staffList.find(s => s.name === selectedStaff);
+      
       setRooms(prevRooms => prevRooms.map(room => {
-        if (room.id === roomId) {
+        if (room.id === assigningRoom.id) {
           toast({
             title: `Room ${room.name} Assigned`,
-            description: "The room is now being cleaned.",
+            description: `${selectedStaff} has been assigned to clean the room.`,
           });
-          return { ...room, status: 'Cleaning in Progress', assignedTo: 'Maria Garcia', avatar: placeholderImages.find((p) => p.id === 'user-avatar-2')?.imageUrl };
+          return { 
+            ...room, 
+            status: 'Cleaning in Progress', 
+            assignedTo: selectedStaff, 
+            avatar: placeholderImages.find((p) => p.id === assignedStaffMember?.avatarId)?.imageUrl 
+          };
         }
         return room;
       }));
-      setAssigningRoomId(null);
+
+      setIsAssigning(false);
+      setAssigningRoom(null);
+      setSelectedStaff(null);
     }, 1000);
   };
 
@@ -231,15 +262,47 @@ function HousekeepingPage() {
                 )}
               </CardContent>
               <div className="p-6 pt-0">
-                 <Button className="w-full" variant={room.status === "Dirty" ? "secondary" : "outline"} disabled={room.status !== "Dirty" || assigningRoomId !== null} onClick={() => handleAssignCleaning(room.id)}>
-                    {assigningRoomId === room.id ? (
-                      <>
-                        <Loader2 className="mr-2 animate-spin" />
-                        Assigning...
-                      </>
-                    ) : room.status === "Cleaning in Progress" ? "Re-assign" : "Assign for Cleaning"
-                    }
-                 </Button>
+                <Dialog open={assigningRoom?.id === room.id} onOpenChange={(isOpen) => !isOpen && setAssigningRoom(null)}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="w-full" 
+                      variant={room.status === "Dirty" ? "secondary" : "outline"} 
+                      disabled={room.status !== "Dirty"}
+                      onClick={() => setAssigningRoom(room)}
+                    >
+                      Assign for Cleaning
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Assign Staff to {room.name}</DialogTitle>
+                      <DialogDescription>
+                        Select a staff member to clean this room.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <RadioGroup onValueChange={(val: StaffName) => setSelectedStaff(val)}>
+                            {staffList.map(staff => (
+                                <div key={staff.name} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
+                                    <RadioGroupItem value={staff.name} id={staff.name} />
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={placeholderImages.find(p => p.id === staff.avatarId)?.imageUrl} alt={staff.name} />
+                                        <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <Label htmlFor={staff.name} className="font-medium">{staff.name}</Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setAssigningRoom(null)}>Cancel</Button>
+                      <Button onClick={handleAssignConfirm} disabled={!selectedStaff || isAssigning}>
+                        {isAssigning && <Loader2 className="mr-2 animate-spin" />}
+                        Confirm Assignment
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </Card>
           ))}
