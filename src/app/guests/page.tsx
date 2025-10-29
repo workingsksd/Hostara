@@ -30,8 +30,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const bookings = [
+const initialBookings = [
   {
     id: 'booking-1',
     guest: {
@@ -94,15 +112,97 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 
 }
 
 function GuestsPage() {
+  const [bookings, setBookings] = useState(initialBookings);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleAddBooking = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newBooking = {
+      id: `booking-${Date.now()}`,
+      guest: {
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        avatar: '',
+      },
+      checkIn: format(new Date(formData.get('checkin') as string), 'yyyy-MM-dd'),
+      checkOut: format(new Date(formData.get('checkout') as string), 'yyyy-MM-dd'),
+      status: formData.get('status') as string,
+      type: 'Hotel',
+      room: 'New Room',
+    };
+    setBookings(prev => [newBooking, ...prev]);
+    setIsDialogOpen(false);
+  };
+  
   return (
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold font-headline">
           Guest & Booking Management
         </h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Booking
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New Booking
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <form onSubmit={handleAddBooking}>
+              <DialogHeader>
+                <DialogTitle>Add New Booking</DialogTitle>
+                <DialogDescription>
+                  Fill in the details below to create a new booking.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Name
+                  </Label>
+                  <Input id="name" name="name" className="col-span-3" required />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input id="email" name="email" type="email" className="col-span-3" required />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="checkin" className="text-right">
+                    Check-in
+                  </Label>
+                  <DatePicker name="checkin" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="checkout" className="text-right">
+                    Check-out
+                  </Label>
+                  <DatePicker name="checkout"/>
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="status" className="text-right">
+                    Status
+                  </Label>
+                  <Select name="status" defaultValue="Pending">
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Confirmed">Confirmed</SelectItem>
+                      <SelectItem value="Checked-in">Checked-in</SelectItem>
+                      <SelectItem value="Checked-out">Checked-out</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save Booking</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
       <Card className="bg-card/60 backdrop-blur-sm border border-border/20">
         <CardHeader>
@@ -121,10 +221,7 @@ function GuestsPage() {
                 <TableHead>Guest</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden md:table-cell">
-                  Booking Type
-                </TableHead>
-                <TableHead className="hidden md:table-cell">
-                  Check-in
+                  Check-in / Check-out
                 </TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -147,7 +244,7 @@ function GuestsPage() {
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="font-medium">{booking.guest.name}</div>
-                    <div className="text-sm text-muted-foreground md:hidden">
+                    <div className="text-sm text-muted-foreground">
                       {booking.guest.email}
                     </div>
                   </TableCell>
@@ -155,10 +252,7 @@ function GuestsPage() {
                     <Badge variant={statusVariant[booking.status] || 'default'}>{booking.status}</Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {booking.type} - {booking.room}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {new Date(booking.checkIn).toLocaleDateString()}
+                    {new Date(booking.checkIn).toLocaleDateString()} - {new Date(booking.checkOut).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -189,5 +283,38 @@ function GuestsPage() {
     </AppLayout>
   );
 }
+
+function DatePicker({name}: {name: string}) {
+  const [date, setDate] = useState<Date>()
+
+  return (
+    <>
+    <input type="hidden" name={name} value={date ? date.toISOString() : ''} />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
+          className={cn(
+            "col-span-3 justify-start text-left font-normal",
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "PPP") : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+    </>
+  )
+}
+
 
 export default withAuth(GuestsPage);
