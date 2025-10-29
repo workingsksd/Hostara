@@ -50,7 +50,22 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 
-const initialBookings = [
+type Booking = {
+  id: string;
+  guest: {
+    name: string;
+    email: string;
+    avatar: string | undefined;
+  };
+  status: 'Checked-in' | 'Confirmed' | 'Pending' | 'Checked-out';
+  checkIn: string;
+  checkOut: string;
+  type: 'Hotel' | 'Lodge' | 'Restaurant';
+  room: string;
+};
+
+
+const initialBookings: Booking[] = [
   {
     id: 'booking-1',
     guest: {
@@ -114,12 +129,15 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 
 
 function GuestsPage() {
   const [bookings, setBookings] = useState(initialBookings);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const handleAddBooking = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newBooking = {
+    const newBooking: Booking = {
       id: `booking-${Date.now()}`,
       guest: {
         name: formData.get('name') as string,
@@ -128,13 +146,47 @@ function GuestsPage() {
       },
       checkIn: format(new Date(formData.get('checkin') as string), 'yyyy-MM-dd'),
       checkOut: format(new Date(formData.get('checkout') as string), 'yyyy-MM-dd'),
-      status: formData.get('status') as string,
+      status: formData.get('status') as Booking['status'],
       type: 'Hotel',
       room: 'New Room',
     };
     setBookings(prev => [newBooking, ...prev]);
-    setIsDialogOpen(false);
+    setIsAddDialogOpen(false);
   };
+
+  const handleUpdateBooking = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedBooking) return;
+    const formData = new FormData(e.currentTarget);
+    const updatedBooking: Booking = {
+      ...selectedBooking,
+      guest: {
+        ...selectedBooking.guest,
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+      },
+      checkIn: format(new Date(formData.get('checkin') as string), 'yyyy-MM-dd'),
+      checkOut: format(new Date(formData.get('checkout') as string), 'yyyy-MM-dd'),
+      status: formData.get('status') as Booking['status'],
+    };
+    setBookings(prev => prev.map(b => b.id === updatedBooking.id ? updatedBooking : b));
+    setIsEditDialogOpen(false);
+    setSelectedBooking(null);
+  };
+  
+  const handleViewDetails = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setIsDetailDialogOpen(true);
+  }
+
+  const handleEdit = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setIsEditDialogOpen(true);
+  }
+
+  const handleCancel = (bookingId: string) => {
+    setBookings(prev => prev.filter(b => b.id !== bookingId));
+  }
   
   return (
     <AppLayout>
@@ -148,7 +200,7 @@ function GuestsPage() {
               <Camera className="mr-2 h-4 w-4" /> KYC Scanner
             </Link>
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Booking
@@ -164,35 +216,35 @@ function GuestsPage() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
+                    <Label htmlFor="name-add" className="text-right">
                       Name
                     </Label>
-                    <Input id="name" name="name" className="col-span-3" required />
+                    <Input id="name-add" name="name" className="col-span-3" required />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">
+                    <Label htmlFor="email-add" className="text-right">
                       Email
                     </Label>
-                    <Input id="email" name="email" type="email" className="col-span-3" required />
+                    <Input id="email-add" name="email" type="email" className="col-span-3" required />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="checkin" className="text-right">
+                    <Label htmlFor="checkin-add" className="text-right">
                       Check-in
                     </Label>
                     <DatePicker name="checkin" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="checkout" className="text-right">
+                    <Label htmlFor="checkout-add" className="text-right">
                       Check-out
                     </Label>
                     <DatePicker name="checkout"/>
                   </div>
                    <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="status" className="text-right">
+                    <Label htmlFor="status-add" className="text-right">
                       Status
                     </Label>
                     <Select name="status" defaultValue="Pending">
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger id="status-add" className="col-span-3">
                         <SelectValue placeholder="Select a status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -276,9 +328,9 @@ function GuestsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Cancel</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetails(booking)}>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(booking)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleCancel(booking.id)} className="text-destructive">Cancel</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -288,12 +340,118 @@ function GuestsPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      {/* View Details Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+            <DialogDescription>
+              Viewing details for {selectedBooking?.guest.name}.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-4 py-4 text-sm">
+                <div className="flex items-center">
+                    <p className="w-2/5 text-muted-foreground">Guest Name</p>
+                    <p className="w-3/5 font-medium">{selectedBooking.guest.name}</p>
+                </div>
+                <div className="flex items-center">
+                    <p className="w-2/5 text-muted-foreground">Guest Email</p>
+                    <p className="w-3/5 font-medium">{selectedBooking.guest.email}</p>
+                </div>
+                 <div className="flex items-center">
+                    <p className="w-2/5 text-muted-foreground">Check-in</p>
+                    <p className="w-3/5 font-medium">{format(new Date(selectedBooking.checkIn), "PPP")}</p>
+                </div>
+                 <div className="flex items-center">
+                    <p className="w-2/5 text-muted-foreground">Check-out</p>
+                    <p className="w-3/5 font-medium">{format(new Date(selectedBooking.checkOut), "PPP")}</p>
+                </div>
+                 <div className="flex items-center">
+                    <p className="w-2/5 text-muted-foreground">Status</p>
+                    <p className="w-3/5 font-medium">
+                        <Badge variant={statusVariant[selectedBooking.status] || 'default'}>{selectedBooking.status}</Badge>
+                    </p>
+                </div>
+                <div className="flex items-center">
+                    <p className="w-2/5 text-muted-foreground">Room</p>
+                    <p className="w-3/5 font-medium">{selectedBooking.room}</p>
+                </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Booking Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <form onSubmit={handleUpdateBooking}>
+                <DialogHeader>
+                  <DialogTitle>Edit Booking</DialogTitle>
+                  <DialogDescription>
+                    Update the details for this booking.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name-edit" className="text-right">
+                      Name
+                    </Label>
+                    <Input id="name-edit" name="name" className="col-span-3" defaultValue={selectedBooking?.guest.name} required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email-edit" className="text-right">
+                      Email
+                    </Label>
+                    <Input id="email-edit" name="email" type="email" className="col-span-3" defaultValue={selectedBooking?.guest.email} required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="checkin-edit" className="text-right">
+                      Check-in
+                    </Label>
+                    <DatePicker name="checkin" initialDate={selectedBooking?.checkIn ? new Date(selectedBooking.checkIn) : undefined} />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="checkout-edit" className="text-right">
+                      Check-out
+                    </Label>
+                    <DatePicker name="checkout" initialDate={selectedBooking?.checkOut ? new Date(selectedBooking.checkOut) : undefined}/>
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="status-edit" className="text-right">
+                      Status
+                    </Label>
+                    <Select name="status" defaultValue={selectedBooking?.status}>
+                      <SelectTrigger id="status-edit" className="col-span-3">
+                        <SelectValue placeholder="Select a status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Confirmed">Confirmed</SelectItem>
+                        <SelectItem value="Checked-in">Checked-in</SelectItem>
+                        <SelectItem value="Checked-out">Checked-out</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                  <Button type="submit">Save Changes</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
     </AppLayout>
   );
 }
 
-function DatePicker({name}: {name: string}) {
-  const [date, setDate] = useState<Date>()
+function DatePicker({name, initialDate}: {name: string, initialDate?: Date}) {
+  const [date, setDate] = useState<Date | undefined>(initialDate)
 
   return (
     <>
@@ -326,3 +484,5 @@ function DatePicker({name}: {name: string}) {
 
 
 export default withAuth(GuestsPage);
+
+    
