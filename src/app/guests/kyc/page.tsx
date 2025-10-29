@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, RefreshCw, UserCheck, Loader2 } from 'lucide-react';
+import { Camera, RefreshCw, UserCheck, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useEffect, useRef, useState, useContext } from 'react';
 import { extractIdInfo, OcrOutput } from '@/ai/flows/kyc-ocr-flow';
 import { Label } from '@/components/ui/label';
@@ -20,8 +20,10 @@ import { format } from 'date-fns';
 function KYCScannerPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [ocrResult, setOcrResult] = useState<OcrOutput | null>(null);
+  const [idCardImage, setIdCardImage] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
@@ -67,22 +69,29 @@ function KYCScannerPage() {
     }
   }, [toast]);
 
-  const handleScanId = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    setIsScanning(true);
-
+  const captureImage = () => {
+    if (!videoRef.current || !canvasRef.current) return null;
+    
     const video = videoRef.current;
     const canvas = canvasRef.current;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const context = canvas.getContext('2d');
-    if (!context) return;
+    if (!context) return null;
 
     context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-    const imageDataUri = canvas.toDataURL('image/jpeg');
+    return canvas.toDataURL('image/jpeg');
+  }
+
+  const handleScanId = async () => {
+    const imageDataUri = captureImage();
+    if (!imageDataUri) return;
+
+    setIsScanning(true);
+    setIdCardImage(imageDataUri);
 
     try {
-      const result = await extractIdInfo({ imageDataUri });
+      const result = await extractIdInfo({ idCardImageDataUri: imageDataUri });
       setOcrResult(result);
       setIsResultOpen(true);
     } catch (error) {
@@ -96,6 +105,45 @@ function KYCScannerPage() {
       setIsScanning(false);
     }
   };
+
+  const handleVerifyFace = async () => {
+    const livePhotoImageDataUri = captureImage();
+    if (!livePhotoImageDataUri || !idCardImage) return;
+
+    setIsVerifying(true);
+    try {
+      const result = await extractIdInfo({ 
+        idCardImageDataUri: idCardImage,
+        livePhotoImageDataUri: livePhotoImageDataUri,
+      });
+
+      if (result.faceMatch?.match === 'true') {
+        toast({
+            title: "Face Verified",
+            description: "The guest's face matches the ID photo.",
+            className: "bg-green-500 text-white",
+        });
+      } else {
+         toast({
+            variant: 'destructive',
+            title: "Face Mismatch",
+            description: result.faceMatch?.reason || "Could not verify face. Please try again.",
+        });
+      }
+      // Update OCR result with face match info
+      setOcrResult(result);
+
+    } catch (error) {
+        console.error('Face verification failed:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Verification Failed',
+            description: 'Could not perform face verification. Please try again.',
+        });
+    } finally {
+        setIsVerifying(false);
+    }
+  }
 
   const handleConfirmGuest = () => {
     if (!ocrResult) return;
@@ -156,7 +204,7 @@ function KYCScannerPage() {
             <canvas ref={canvasRef} className="hidden" />
 
             <div className="flex justify-center gap-4">
-              <Button size="lg" disabled={!hasCameraPermission || isScanning} onClick={handleScanId}>
+              <Button size="lg" disabled={!hasCameraPermission || isScanning || isVerifying} onClick={handleScanId}>
                 {isScanning ? (
                     <>
                         <Loader2 className="mr-2 animate-spin" />
@@ -169,9 +217,18 @@ function KYCScannerPage() {
                     </>
                 )}
               </Button>
-              <Button size="lg" variant="secondary" disabled={!hasCameraPermission}>
-                <UserCheck className="mr-2" />
-                Verify Face
+              <Button size="lg" variant="secondary" disabled={!hasCameraPermission || !idCardImage || isVerifying} onClick={handleVerifyFace}>
+                 {isVerifying ? (
+                    <>
+                        <Loader2 className="mr-2 animate-spin" />
+                        Verifying...
+                    </>
+                ) : (
+                    <>
+                        <UserCheck className="mr-2" />
+                        Verify Face
+                    </>
+                )}
               </Button>
             </div>
           </CardContent>
@@ -204,6 +261,18 @@ function KYCScannerPage() {
                 <Label htmlFor="address">Address</Label>
                 <Input id="address" defaultValue={ocrResult.address} />
               </div>
+              {ocrResult.faceMatch && ocrResult.faceMatch.match !== 'not_applicable' && (
+                <div className="space-y-2">
+                  <Label>Face Verification</Label>
+                  <Alert variant={ocrResult.faceMatch.match === 'true' ? 'default' : 'destructive'} className={ocrResult.faceMatch.match === 'true' ? 'bg-green-100/10 border-green-500/50' : ''}>
+                    {ocrResult.faceMatch.match === 'true' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                    <AlertTitle className="capitalize">{ocrResult.faceMatch.match === 'true' ? "Verified" : "Mismatch"}</AlertTitle>
+                    <AlertDescription>
+                      {ocrResult.faceMatch.reason}
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
