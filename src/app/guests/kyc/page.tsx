@@ -9,10 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Camera, RefreshCw, UserCheck, Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useContext } from 'react';
 import { extractIdInfo, OcrOutput } from '@/ai/flows/kyc-ocr-flow';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Booking, BookingContext } from '@/context/BookingContext';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 
 function KYCScannerPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -22,6 +25,8 @@ function KYCScannerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
+  const { addBooking } = useContext(BookingContext);
+  const router = useRouter();
 
   useEffect(() => {
     const getCameraPermission = async () => {
@@ -93,13 +98,30 @@ function KYCScannerPage() {
   };
 
   const handleConfirmGuest = () => {
-    // Here you would typically save the guest data and link it to a new booking
+    if (!ocrResult) return;
+
+    const newBooking: Booking = {
+        id: `booking-${Date.now()}`,
+        guest: {
+            name: ocrResult.name,
+            email: 'email@example.com', // Placeholder email
+            avatar: '',
+        },
+        checkIn: format(new Date(), 'yyyy-MM-dd'),
+        checkOut: format(new Date(new Date().setDate(new Date().getDate() + 3)), 'yyyy-MM-dd'), // Default 3 day stay
+        status: 'Checked-in',
+        type: 'Hotel',
+        room: 'Assigned on check-in', // Placeholder room
+    };
+    
+    addBooking(newBooking);
+
     toast({
         title: "Guest Confirmed",
-        description: `${ocrResult?.name} has been successfully verified and added.`
-    })
-    setIsResultOpen(false);
-    setOcrResult(null);
+        description: `${ocrResult.name} has been successfully checked-in.`
+    });
+    
+    router.push('/guests');
   }
 
   return (
@@ -186,7 +208,7 @@ function KYCScannerPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsResultOpen(false)}>Cancel</Button>
-            <Button onClick={handleConfirmGuest}>Confirm Guest</Button>
+            <Button onClick={handleConfirmGuest}>Confirm & Check-in</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

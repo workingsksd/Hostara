@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -49,76 +49,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
+import { Booking, BookingContext } from '@/context/BookingContext';
 
-type Booking = {
-  id: string;
-  guest: {
-    name: string;
-    email: string;
-    avatar: string | undefined;
-  };
-  status: 'Checked-in' | 'Confirmed' | 'Pending' | 'Checked-out';
-  checkIn: string;
-  checkOut: string;
-  type: 'Hotel' | 'Lodge' | 'Restaurant';
-  room: string;
-};
-
-
-const initialBookings: Booking[] = [
-  {
-    id: 'booking-1',
-    guest: {
-      name: 'Eleanor Vance',
-      email: 'eleanor@example.com',
-      avatar: placeholderImages.find(p => p.id === 'user-avatar-2')?.imageUrl,
-    },
-    status: 'Checked-in',
-    checkIn: '2024-08-15',
-    checkOut: '2024-08-20',
-    type: 'Hotel',
-    room: 'Deluxe Suite 301',
-  },
-  {
-    id: 'booking-2',
-    guest: {
-      name: 'Marcus Thorne',
-      email: 'marcus@example.com',
-      avatar: placeholderImages.find(p => p.id === 'user-avatar-1')?.imageUrl,
-    },
-    status: 'Confirmed',
-    checkIn: '2024-08-18',
-    checkOut: '2024-08-22',
-    type: 'Lodge',
-    room: 'Lakeside Cabin 5',
-  },
-  {
-    id: 'booking-3',
-    guest: {
-      name: 'Liam Gallagher',
-      email: 'liam@example.com',
-      avatar: placeholderImages.find(p => p.id === 'user-avatar-3')?.imageUrl,
-    },
-    status: 'Pending',
-    checkIn: '2024-09-01',
-    checkOut: '2024-09-05',
-    type: 'Hotel',
-    room: 'Standard Room 102',
-  },
-  {
-    id: 'booking-4',
-    guest: {
-      name: 'Sophia Loren',
-      email: 'sophia@example.com',
-      avatar: '',
-    },
-    status: 'Checked-out',
-    checkIn: '2024-08-10',
-    checkOut: '2024-08-14',
-    type: 'Restaurant',
-    room: 'Table 7',
-  },
-];
 
 const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
   'Checked-in': 'default',
@@ -128,7 +60,7 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 
 }
 
 function GuestsPage() {
-  const [bookings, setBookings] = useState(initialBookings);
+  const { bookings, addBooking, updateBooking, deleteBooking } = useContext(BookingContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -150,7 +82,7 @@ function GuestsPage() {
       type: 'Hotel',
       room: 'New Room',
     };
-    setBookings(prev => [newBooking, ...prev]);
+    addBooking(newBooking);
     setIsAddDialogOpen(false);
   };
 
@@ -158,7 +90,7 @@ function GuestsPage() {
     e.preventDefault();
     if (!selectedBooking) return;
     const formData = new FormData(e.currentTarget);
-    const updatedBooking: Booking = {
+    const updated: Booking = {
       ...selectedBooking,
       guest: {
         ...selectedBooking.guest,
@@ -169,7 +101,7 @@ function GuestsPage() {
       checkOut: format(new Date(formData.get('checkout') as string), 'yyyy-MM-dd'),
       status: formData.get('status') as Booking['status'],
     };
-    setBookings(prev => prev.map(b => b.id === updatedBooking.id ? updatedBooking : b));
+    updateBooking(updated);
     setIsEditDialogOpen(false);
     setSelectedBooking(null);
   };
@@ -185,7 +117,7 @@ function GuestsPage() {
   }
 
   const handleCancel = (bookingId: string) => {
-    setBookings(prev => prev.filter(b => b.id !== bookingId));
+    deleteBooking(bookingId);
   }
   
   return (
@@ -484,5 +416,3 @@ function DatePicker({name, initialDate}: {name: string, initialDate?: Date}) {
 
 
 export default withAuth(GuestsPage);
-
-    

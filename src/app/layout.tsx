@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/toaster';
+import { BookingProvider } from '@/context/BookingContext';
 
 export const metadata: Metadata = {
   title: 'OptiServe ERP',
@@ -22,10 +23,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <SidebarProvider>
-          {children}
-        </SidebarProvider>
-        <Toaster />
+        <BookingProvider>
+            <SidebarProvider>
+            {children}
+            </SidebarProvider>
+            <Toaster />
+        </BookingProvider>
       </body>
     </html>
   );
