@@ -22,7 +22,8 @@ import {
   ChevronDown,
   LineChart,
   Plug,
-  Shield
+  Shield,
+  Camera
 } from "lucide-react"
 
 export function AppSidebar() {
@@ -47,10 +48,18 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Guests & Bookings">
+            <SidebarMenuButton asChild tooltip="Front Desk">
               <Link href="/guests">
                 <Users />
-                <span>Guests & Bookings</span>
+                <span>Front Desk</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="KYC Scanner">
+              <Link href="/guests/kyc">
+                <Camera />
+                <span>KYC Scanner</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

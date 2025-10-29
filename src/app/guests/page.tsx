@@ -22,7 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { placeholderImages } from '@/lib/placeholder-images';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Camera } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +48,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Link from 'next/link';
 
 const initialBookings = [
   {
@@ -139,70 +140,77 @@ function GuestsPage() {
     <AppLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold font-headline">
-          Guest & Booking Management
+          Front Desk & Booking Management
         </h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Booking
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <form onSubmit={handleAddBooking}>
-              <DialogHeader>
-                <DialogTitle>Add New Booking</DialogTitle>
-                <DialogDescription>
-                  Fill in the details below to create a new booking.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
-                  <Input id="name" name="name" className="col-span-3" required />
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/guests/kyc">
+              <Camera className="mr-2 h-4 w-4" /> KYC Scanner
+            </Link>
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Booking
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <form onSubmit={handleAddBooking}>
+                <DialogHeader>
+                  <DialogTitle>Add New Booking</DialogTitle>
+                  <DialogDescription>
+                    Fill in the details below to create a new booking.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Name
+                    </Label>
+                    <Input id="name" name="name" className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">
+                      Email
+                    </Label>
+                    <Input id="email" name="email" type="email" className="col-span-3" required />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="checkin" className="text-right">
+                      Check-in
+                    </Label>
+                    <DatePicker name="checkin" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="checkout" className="text-right">
+                      Check-out
+                    </Label>
+                    <DatePicker name="checkout"/>
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="status" className="text-right">
+                      Status
+                    </Label>
+                    <Select name="status" defaultValue="Pending">
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select a status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Confirmed">Confirmed</SelectItem>
+                        <SelectItem value="Checked-in">Checked-in</SelectItem>
+                        <SelectItem value="Checked-out">Checked-out</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
-                  </Label>
-                  <Input id="email" name="email" type="email" className="col-span-3" required />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="checkin" className="text-right">
-                    Check-in
-                  </Label>
-                  <DatePicker name="checkin" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="checkout" className="text-right">
-                    Check-out
-                  </Label>
-                  <DatePicker name="checkout"/>
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="status" className="text-right">
-                    Status
-                  </Label>
-                  <Select name="status" defaultValue="Pending">
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="Confirmed">Confirmed</SelectItem>
-                      <SelectItem value="Checked-in">Checked-in</SelectItem>
-                      <SelectItem value="Checked-out">Checked-out</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Save Booking</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <Button type="submit">Save Booking</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       <Card className="bg-card/60 backdrop-blur-sm border border-border/20">
         <CardHeader>
