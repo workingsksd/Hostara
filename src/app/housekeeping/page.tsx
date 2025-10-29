@@ -22,66 +22,85 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress';
+type Staff = 'Maria Garcia' | 'Liam Gallagher' | 'Unassigned';
 
-const initialRooms = [
+type Room = {
+  id: string;
+  name: string;
+  status: RoomStatus;
+  assignedTo: Staff | null;
+  avatar: string | undefined;
+  guest: string | null;
+}
+
+const initialRooms: Room[] = [
   {
     id: 'room-101',
     name: 'Room 101',
-    status: 'Ready' as RoomStatus,
+    status: 'Ready',
     assignedTo: null,
     guest: 'John Doe',
+    avatar: undefined
   },
   {
     id: 'room-102',
     name: 'Room 102',
-    status: 'Dirty' as RoomStatus,
+    status: 'Dirty',
     assignedTo: 'Maria Garcia',
     avatar: placeholderImages.find((p) => p.id === 'user-avatar-2')?.imageUrl,
+    guest: null
   },
   {
     id: 'room-103',
     name: 'Lodge 5A',
-    status: 'Ready' as RoomStatus,
+    status: 'Ready',
     assignedTo: null,
     guest: 'Sophia Loren',
+    avatar: undefined
   },
   {
     id: 'room-201',
     name: 'Room 201',
-    status: 'Cleaning in Progress' as RoomStatus,
+    status: 'Cleaning in Progress',
     assignedTo: 'Liam Gallagher',
     avatar: placeholderImages.find((p) => p.id === 'user-avatar-3')?.imageUrl,
+    guest: null
   },
   {
     id: 'room-202',
     name: 'Suite 4B',
-    status: 'Dirty' as RoomStatus,
+    status: 'Dirty',
     assignedTo: 'Maria Garcia',
     avatar: placeholderImages.find((p) => p.id === 'user-avatar-2')?.imageUrl,
+    guest: null
   },
   {
     id: 'room-203',
     name: 'Room 203',
-    status: 'Ready' as RoomStatus,
+    status: 'Ready',
     assignedTo: null,
     guest: null,
+    avatar: undefined
   },
    {
     id: 'room-301',
     name: 'Room 301',
-    status: 'Ready' as RoomStatus,
+    status: 'Ready',
     assignedTo: null,
     guest: 'Eleanor Vance',
+    avatar: undefined
   },
   {
     id: 'room-302',
     name: 'Lodge 2C',
-    status: 'Dirty' as RoomStatus,
+    status: 'Dirty',
     assignedTo: null,
     guest: 'Marcus Thorne',
+    avatar: undefined
   },
 ];
 
@@ -110,12 +129,33 @@ const statusConfig: {
 };
 
 function HousekeepingPage() {
+  const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [filter, setFilter] = useState('All');
+  const [assigningRoomId, setAssigningRoomId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleAssignCleaning = (roomId: string) => {
+    setAssigningRoomId(roomId);
+    // Simulate API call
+    setTimeout(() => {
+      setRooms(prevRooms => prevRooms.map(room => {
+        if (room.id === roomId) {
+          toast({
+            title: `Room ${room.name} Assigned`,
+            description: "The room is now being cleaned.",
+          });
+          return { ...room, status: 'Cleaning in Progress', assignedTo: 'Maria Garcia', avatar: placeholderImages.find((p) => p.id === 'user-avatar-2')?.imageUrl };
+        }
+        return room;
+      }));
+      setAssigningRoomId(null);
+    }, 1000);
+  };
 
   const filteredRooms =
     filter === 'All'
-      ? initialRooms
-      : initialRooms.filter((room) => room.status === filter);
+      ? rooms
+      : rooms.filter((room) => room.status === filter);
 
   return (
     <AppLayout>
@@ -191,8 +231,14 @@ function HousekeepingPage() {
                 )}
               </CardContent>
               <div className="p-6 pt-0">
-                 <Button className="w-full" variant={room.status === "Dirty" ? "secondary" : "outline"} disabled={room.status !== "Dirty"}>
-                    Assign for Cleaning
+                 <Button className="w-full" variant={room.status === "Dirty" ? "secondary" : "outline"} disabled={room.status !== "Dirty" || assigningRoomId !== null} onClick={() => handleAssignCleaning(room.id)}>
+                    {assigningRoomId === room.id ? (
+                      <>
+                        <Loader2 className="mr-2 animate-spin" />
+                        Assigning...
+                      </>
+                    ) : room.status === "Cleaning in Progress" ? "Re-assign" : "Assign for Cleaning"
+                    }
                  </Button>
               </div>
             </Card>
