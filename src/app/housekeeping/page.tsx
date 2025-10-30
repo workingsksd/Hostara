@@ -34,12 +34,13 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2, Sparkles, Wrench, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2, Sparkles, Wrench, AlertCircle, Eye, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { BookingContext, MaintenanceTask } from '@/context/BookingContext';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
-type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress' | 'Maintenance';
+type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress' | 'Pending Approval' | 'Maintenance';
 type StaffName = 'Maria Garcia' | 'Liam Gallagher' | 'Chloe Nguyen' | 'Unassigned';
 
 type Room = {
@@ -110,11 +111,11 @@ const initialRooms: Room[] = [
    {
     id: 'room-301',
     name: 'Room 301',
-    status: 'Ready',
-    assignedTo: null,
+    status: 'Pending Approval',
+    assignedTo: 'Maria Garcia',
     lastCleanedBy: 'Liam Gallagher',
     guest: 'Eleanor Vance',
-    avatar: undefined
+    avatar: placeholderImages.find((p) => p.id === 'user-avatar-2')?.imageUrl
   },
   {
     id: 'room-302',
@@ -133,6 +134,16 @@ const staffList: { name: StaffName, avatarId: string }[] = [
     { name: 'Chloe Nguyen', avatarId: 'user-avatar-1' },
 ];
 
+const cleaningChecklist = [
+    { id: 'beds', label: 'Make beds' },
+    { id: 'surfaces', label: 'Dust all surfaces' },
+    { id: 'bathroom', label: 'Clean and disinfect bathroom' },
+    { id: 'towels', label: 'Replace towels' },
+    { id: 'trash', label: 'Empty trash bins' },
+    { id: 'minibar', label: 'Restock minibar' },
+];
+
+
 const statusConfig: {
   [key in RoomStatus]: {
     variant: 'default' | 'secondary' | 'destructive' | 'outline';
@@ -142,7 +153,7 @@ const statusConfig: {
 } = {
   Ready: {
     variant: 'default',
-    icon: <CheckCircle className="text-green-500" />,
+    icon: <ShieldCheck className="text-green-500" />,
     label: 'Ready',
   },
   Dirty: {
@@ -153,7 +164,12 @@ const statusConfig: {
   'Cleaning in Progress': {
     variant: 'secondary',
     icon: <Clock className="text-yellow-500" />,
-    label: 'Cleaning in Progress',
+    label: 'Cleaning',
+  },
+  'Pending Approval': {
+    variant: 'outline',
+    icon: <Eye className="text-purple-500" />,
+    label: 'Pending Approval',
   },
   Maintenance: {
     variant: 'outline',
@@ -165,23 +181,23 @@ const statusConfig: {
 function HousekeepingPage() {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [filter, setFilter] = useState('All');
-  const [assigningRoom, setAssigningRoom] = useState<Room | null>(null);
-  const [maintenanceRoom, setMaintenanceRoom] = useState<Room | null>(null);
+  const [activeDialog, setActiveDialog] = useState<'assign' | 'maintenance' | 'checklist' | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<StaffName | null>(null);
-  const [isAssigning, setIsAssigning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { addMaintenanceTask } = useContext(BookingContext);
 
   const handleAssignConfirm = () => {
-    if (!assigningRoom || !selectedStaff) return;
+    if (!selectedRoom || !selectedStaff) return;
     
-    setIsAssigning(true);
+    setIsSubmitting(true);
     // Simulate API call
     setTimeout(() => {
       const assignedStaffMember = staffList.find(s => s.name === selectedStaff);
       
       setRooms(prevRooms => prevRooms.map(room => {
-        if (room.id === assigningRoom.id) {
+        if (room.id === selectedRoom.id) {
           toast({
             title: `Room ${room.name} Assigned`,
             description: `${selectedStaff} has been assigned to clean the room.`,
@@ -196,14 +212,34 @@ function HousekeepingPage() {
         return room;
       }));
 
-      setIsAssigning(false);
-      setAssigningRoom(null);
+      setIsSubmitting(false);
+      setActiveDialog(null);
+      setSelectedRoom(null);
       setSelectedStaff(null);
     }, 1000);
   };
   
-  const handleMarkAsReady = (roomId: string) => {
+  const handleCompleteCleaning = (roomId: string) => {
     setRooms(prevRooms => prevRooms.map(room => {
+        if (room.id === roomId) {
+            toast({
+                title: `Cleaning for ${room.name} Complete`,
+                description: 'The room is now pending supervisor approval.',
+                className: 'bg-purple-500 text-white'
+            });
+            return { 
+                ...room, 
+                status: 'Pending Approval', 
+            };
+        }
+        return room;
+    }));
+    setActiveDialog(null);
+    setSelectedRoom(null);
+  }
+
+  const handleApproveCleaning = (roomId: string) => {
+     setRooms(prevRooms => prevRooms.map(room => {
         if (room.id === roomId) {
             toast({
                 title: `Room ${room.name} is Ready`,
@@ -221,23 +257,42 @@ function HousekeepingPage() {
         return room;
     }));
   }
+  
+  const handleRequestRework = (roomId: string) => {
+     setRooms(prevRooms => prevRooms.map(room => {
+        if (room.id === roomId) {
+            toast({
+                title: `Rework Requested for ${room.name}`,
+                description: 'The room has been marked as "Needs Cleaning" again.',
+                variant: 'destructive'
+            });
+            return { 
+                ...room, 
+                status: 'Dirty',
+                assignedTo: null,
+                avatar: undefined 
+            };
+        }
+        return room;
+    }));
+  }
 
   const handleMaintenanceRequest = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!maintenanceRoom) return;
+    if (!selectedRoom) return;
 
     const formData = new FormData(e.currentTarget);
     const issue = formData.get('issue') as string;
 
     const newMaintenanceTask: MaintenanceTask = {
-      room: maintenanceRoom.name,
+      room: selectedRoom.name,
       issue,
       priority: 'High', // Defaulting to high for now
     };
     addMaintenanceTask(newMaintenanceTask);
 
     setRooms(prevRooms => prevRooms.map(room => {
-      if (room.id === maintenanceRoom.id) {
+      if (room.id === selectedRoom.id) {
         return { ...room, status: 'Maintenance' };
       }
       return room;
@@ -245,10 +300,11 @@ function HousekeepingPage() {
 
     toast({
       title: 'Maintenance Requested',
-      description: `An alert for ${issue} in ${maintenanceRoom.name} has been created.`,
+      description: `An alert for ${issue} in ${selectedRoom.name} has been created.`,
     });
 
-    setMaintenanceRoom(null);
+    setActiveDialog(null);
+    setSelectedRoom(null);
   };
 
 
@@ -271,18 +327,17 @@ function HousekeepingPage() {
           </div>
           <div className="flex items-center gap-2">
             <Select onValueChange={setFilter} value={filter}>
-              <SelectTrigger className="w-[180px] bg-card/80 backdrop-blur-sm">
+              <SelectTrigger className="w-[200px] bg-card/80 backdrop-blur-sm">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All Statuses</SelectItem>
                 <SelectItem value="Ready">Ready</SelectItem>
-                <SelectItem value="Dirty">Dirty</SelectItem>
-                <SelectItem value="Cleaning in Progress">
-                  Cleaning in Progress
-                </SelectItem>
-                 <SelectItem value="Maintenance">Maintenance</SelectItem>
+                <SelectItem value="Dirty">Needs Cleaning</SelectItem>
+                <SelectItem value="Cleaning in Progress">Cleaning</SelectItem>
+                <SelectItem value="Pending Approval">Pending Approval</SelectItem>
+                <SelectItem value="Maintenance">Maintenance</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -319,7 +374,9 @@ function HousekeepingPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium">Assigned To</p>
+                      <p className="text-sm font-medium">
+                        {room.status === 'Cleaning in Progress' ? 'Assigned To' : 'Cleaned By'}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {room.assignedTo}
                       </p>
@@ -341,94 +398,148 @@ function HousekeepingPage() {
                 )}
               </CardContent>
               <CardFooter className="pt-0 flex flex-col gap-2">
-                {room.status === 'Cleaning in Progress' ? (
-                     <Button 
-                      className="w-full" 
-                      variant="default"
-                      onClick={() => handleMarkAsReady(room.id)}
-                    >
-                      <CheckCircle className="mr-2" /> Mark as Ready
-                    </Button>
-                ) : (
-                <Dialog open={assigningRoom?.id === room.id} onOpenChange={(isOpen) => !isOpen && setAssigningRoom(null)}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      className="w-full" 
-                      variant={room.status === "Dirty" ? "secondary" : "outline"} 
-                      disabled={room.status !== "Dirty"}
-                      onClick={() => setAssigningRoom(room)}
-                    >
-                      Assign for Cleaning
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Assign Staff to {room.name}</DialogTitle>
-                      <DialogDescription>
-                        Select a staff member to clean this room.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <RadioGroup onValueChange={(val: StaffName) => setSelectedStaff(val)}>
-                            {staffList.map(staff => (
-                                <div key={staff.name} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
-                                    <RadioGroupItem value={staff.name} id={staff.name} />
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={placeholderImages.find(p => p.id === staff.avatarId)?.imageUrl} alt={staff.name} />
-                                        <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <Label htmlFor={staff.name} className="font-medium">{staff.name}</Label>
-                                </div>
-                            ))}
-                        </RadioGroup>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setAssigningRoom(null)}>Cancel</Button>
-                      <Button onClick={handleAssignConfirm} disabled={!selectedStaff || isAssigning}>
-                        {isAssigning && <Loader2 className="mr-2 animate-spin" />}
-                        Confirm Assignment
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                
+                {/* Actions for Dirty rooms */}
+                {room.status === 'Dirty' && (
+                  <Button 
+                    className="w-full" 
+                    variant="secondary"
+                    onClick={() => { setSelectedRoom(room); setActiveDialog('assign'); }}
+                  >
+                    Assign for Cleaning
+                  </Button>
                 )}
 
-                <Dialog open={maintenanceRoom?.id === room.id} onOpenChange={(isOpen) => !isOpen && setMaintenanceRoom(null)}>
-                  <DialogTrigger asChild>
+                {/* Actions for Cleaning in Progress */}
+                {room.status === 'Cleaning in Progress' && (
+                  <Button 
+                    className="w-full" 
+                    variant="default"
+                    onClick={() => { setSelectedRoom(room); setActiveDialog('checklist'); }}
+                  >
+                    <CheckCircle className="mr-2" /> Complete Cleaning
+                  </Button>
+                )}
+                
+                {/* Actions for Pending Approval */}
+                {room.status === 'Pending Approval' && (
+                  <div className="w-full grid grid-cols-2 gap-2">
                     <Button 
-                      variant="outline" 
-                      className="w-full border-blue-500/50 text-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
-                      onClick={() => setMaintenanceRoom(room)}
+                      className="w-full" 
+                      variant="destructive"
+                      onClick={() => handleRequestRework(room.id)}
                     >
-                        <Wrench className="mr-2" /> Request Maintenance
+                      <ShieldAlert className="mr-2" /> Rework
                     </Button>
-                  </DialogTrigger>
-                   <DialogContent>
-                    <form onSubmit={handleMaintenanceRequest}>
-                      <DialogHeader>
-                        <DialogTitle>Request Maintenance for {room.name}</DialogTitle>
-                        <DialogDescription>
-                          Describe the issue that needs attention from the maintenance team.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="py-4">
-                        <Label htmlFor="issue">Maintenance Issue</Label>
-                        <Textarea id="issue" name="issue" placeholder="e.g., Leaky faucet in the bathroom" required className="mt-2"/>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" type="button" onClick={() => setMaintenanceRoom(null)}>Cancel</Button>
-                        <Button type="submit">Submit Request</Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                      onClick={() => handleApproveCleaning(room.id)}
+                    >
+                      <ShieldCheck className="mr-2" /> Approve
+                    </Button>
+                  </div>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full border-blue-500/50 text-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
+                  onClick={() => { setSelectedRoom(room); setActiveDialog('maintenance'); }}
+                >
+                    <Wrench className="mr-2" /> Request Maintenance
+                </Button>
               </CardFooter>
             </Card>
           ))}
         </div>
       </div>
+
+      {/* Assign Staff Dialog */}
+      <Dialog open={activeDialog === 'assign'} onOpenChange={(isOpen) => !isOpen && setActiveDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Staff to {selectedRoom?.name}</DialogTitle>
+            <DialogDescription>
+              Select a staff member to clean this room.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+              <RadioGroup onValueChange={(val: StaffName) => setSelectedStaff(val)}>
+                  {staffList.map(staff => (
+                      <div key={staff.name} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
+                          <RadioGroupItem value={staff.name} id={staff.name} />
+                          <Avatar className="h-9 w-9">
+                              <AvatarImage src={placeholderImages.find(p => p.id === staff.avatarId)?.imageUrl} alt={staff.name} />
+                              <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <Label htmlFor={staff.name} className="font-medium">{staff.name}</Label>
+                      </div>
+                  ))}
+              </RadioGroup>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveDialog(null)}>Cancel</Button>
+            <Button onClick={handleAssignConfirm} disabled={!selectedStaff || isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 animate-spin" />}
+              Confirm Assignment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Maintenance Request Dialog */}
+      <Dialog open={activeDialog === 'maintenance'} onOpenChange={(isOpen) => !isOpen && setActiveDialog(null)}>
+        <DialogContent>
+          <form onSubmit={handleMaintenanceRequest}>
+            <DialogHeader>
+              <DialogTitle>Request Maintenance for {selectedRoom?.name}</DialogTitle>
+              <DialogDescription>
+                Describe the issue that needs attention from the maintenance team.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="issue">Maintenance Issue</Label>
+              <Textarea id="issue" name="issue" placeholder="e.g., Leaky faucet in the bathroom" required className="mt-2"/>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setActiveDialog(null)}>Cancel</Button>
+              <Button type="submit">Submit Request</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cleaning Checklist Dialog */}
+      <Dialog open={activeDialog === 'checklist'} onOpenChange={(isOpen) => !isOpen && setActiveDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cleaning Checklist for {selectedRoom?.name}</DialogTitle>
+            <DialogDescription>
+              Ensure all tasks are completed before marking the room as ready for approval.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {cleaningChecklist.map(item => (
+              <div key={item.id} className="flex items-center space-x-3">
+                <Checkbox id={item.id} />
+                <Label htmlFor={item.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  {item.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveDialog(null)}>Cancel</Button>
+            <Button onClick={() => selectedRoom && handleCompleteCleaning(selectedRoom.id)}>
+              Submit for Approval
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </AppLayout>
   );
 }
 
 export default withAuth(HousekeepingPage);
+
+    
