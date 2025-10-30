@@ -1,5 +1,6 @@
 
 'use client'
+import { useContext } from "react";
 import withAuth from "@/components/withAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { BedDouble, BookOpenCheck, Bot, Building, ChefHat, UtensilsCrossed, User
 import { placeholderImages } from "@/lib/placeholder-images";
 import { BookingsChart } from "@/components/dashboard/bookings-chart";
 import { AppLayout } from "@/components/layout/app-layout";
+import { BookingContext } from "@/context/BookingContext";
 
 const recentBookings = [
   {
@@ -37,14 +39,9 @@ const recentBookings = [
   },
 ];
 
-const maintenanceTasks = [
-  { room: "Room 204", issue: "Leaky Faucet", priority: "High" },
-  { room: "Lodge 3B", issue: "AC Not Cooling", priority: "High" },
-  { room: "Restaurant", issue: "Freezer Malfunction", priority: "Critical" },
-  { room: "Room 101", issue: "Wi-Fi Down", priority: "Medium" },
-];
 
 function DashboardPage() {
+  const { maintenanceTasks } = useContext(BookingContext);
   return (
     <AppLayout>
       <div className="space-y-8">
@@ -185,8 +182,8 @@ function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {maintenanceTasks.map((task) => (
-                <div key={task.room} className="flex items-start justify-between p-3 rounded-lg bg-background/50">
+              {maintenanceTasks.map((task, index) => (
+                <div key={index} className="flex items-start justify-between p-3 rounded-lg bg-background/50">
                   <div>
                     <p className="font-semibold">{task.room}</p>
                     <p className="text-sm text-muted-foreground">{task.issue}</p>
@@ -194,6 +191,9 @@ function DashboardPage() {
                   <Badge variant={task.priority === 'High' || task.priority === 'Critical' ? 'destructive' : 'secondary'}>{task.priority}</Badge>
                 </div>
               ))}
+              {maintenanceTasks.length === 0 && (
+                <div className="text-center text-sm text-muted-foreground p-4">No maintenance alerts.</div>
+              )}
             </CardContent>
           </Card>
         </div>

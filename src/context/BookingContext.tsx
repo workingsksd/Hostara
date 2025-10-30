@@ -18,6 +18,12 @@ export type Booking = {
   room: string;
 };
 
+export type MaintenanceTask = {
+  room: string;
+  issue: string;
+  priority: 'High' | 'Medium' | 'Low' | 'Critical';
+}
+
 const initialBookings: Booking[] = [
   {
     id: 'booking-1',
@@ -73,12 +79,20 @@ const initialBookings: Booking[] = [
   },
 ];
 
+const initialMaintenanceTasks: MaintenanceTask[] = [
+  { room: "Room 204", issue: "Leaky Faucet", priority: "High" },
+  { room: "Lodge 3B", issue: "AC Not Cooling", priority: "High" },
+  { room: "Restaurant", issue: "Freezer Malfunction", priority: "Critical" },
+];
+
 
 interface BookingContextType {
   bookings: Booking[];
   addBooking: (booking: Booking) => void;
   updateBooking: (updatedBooking: Booking) => void;
   deleteBooking: (bookingId: string) => void;
+  maintenanceTasks: MaintenanceTask[];
+  addMaintenanceTask: (task: MaintenanceTask) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -86,10 +100,13 @@ export const BookingContext = createContext<BookingContextType>({
   addBooking: () => {},
   updateBooking: () => {},
   deleteBooking: () => {},
+  maintenanceTasks: [],
+  addMaintenanceTask: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+  const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(initialMaintenanceTasks);
 
   const addBooking = (booking: Booking) => {
     setBookings(prev => [booking, ...prev]);
@@ -104,9 +121,13 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const deleteBooking = (bookingId: string) => {
     setBookings(prev => prev.filter(b => b.id !== bookingId));
   };
+  
+  const addMaintenanceTask = (task: MaintenanceTask) => {
+    setMaintenanceTasks(prev => [task, ...prev]);
+  }
 
   return (
-    <BookingContext.Provider value={{ bookings, addBooking, updateBooking, deleteBooking }}>
+    <BookingContext.Provider value={{ bookings, addBooking, updateBooking, deleteBooking, maintenanceTasks, addMaintenanceTask }}>
       {children}
     </BookingContext.Provider>
   );

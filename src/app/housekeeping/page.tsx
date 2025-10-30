@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import {
   Card,
   CardContent,
@@ -34,10 +34,12 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2, Sparkles, Wrench, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { BookingContext, MaintenanceTask } from '@/context/BookingContext';
+import { Textarea } from '@/components/ui/textarea';
 
-type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress';
+type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress' | 'Maintenance';
 type StaffName = 'Maria Garcia' | 'Liam Gallagher' | 'Chloe Nguyen' | 'Unassigned';
 
 type Room = {
@@ -133,7 +135,7 @@ const staffList: { name: StaffName, avatarId: string }[] = [
 
 const statusConfig: {
   [key in RoomStatus]: {
-    variant: 'default' | 'secondary' | 'destructive';
+    variant: 'default' | 'secondary' | 'destructive' | 'outline';
     icon: React.ReactNode;
     label: string;
   };
@@ -153,15 +155,22 @@ const statusConfig: {
     icon: <Clock className="text-yellow-500" />,
     label: 'Cleaning in Progress',
   },
+  Maintenance: {
+    variant: 'outline',
+    icon: <Wrench className="text-blue-500" />,
+    label: 'Maintenance',
+  }
 };
 
 function HousekeepingPage() {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [filter, setFilter] = useState('All');
   const [assigningRoom, setAssigningRoom] = useState<Room | null>(null);
+  const [maintenanceRoom, setMaintenanceRoom] = useState<Room | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<StaffName | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
   const { toast } = useToast();
+  const { addMaintenanceTask } = useContext(BookingContext);
 
   const handleAssignConfirm = () => {
     if (!assigningRoom || !selectedStaff) return;
@@ -213,6 +222,36 @@ function HousekeepingPage() {
     }));
   }
 
+  const handleMaintenanceRequest = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!maintenanceRoom) return;
+
+    const formData = new FormData(e.currentTarget);
+    const issue = formData.get('issue') as string;
+
+    const newMaintenanceTask: MaintenanceTask = {
+      room: maintenanceRoom.name,
+      issue,
+      priority: 'High', // Defaulting to high for now
+    };
+    addMaintenanceTask(newMaintenanceTask);
+
+    setRooms(prevRooms => prevRooms.map(room => {
+      if (room.id === maintenanceRoom.id) {
+        return { ...room, status: 'Maintenance' };
+      }
+      return room;
+    }));
+
+    toast({
+      title: 'Maintenance Requested',
+      description: `An alert for ${issue} in ${maintenanceRoom.name} has been created.`,
+    });
+
+    setMaintenanceRoom(null);
+  };
+
+
   const filteredRooms =
     filter === 'All'
       ? rooms
@@ -243,6 +282,7 @@ function HousekeepingPage() {
                 <SelectItem value="Cleaning in Progress">
                   Cleaning in Progress
                 </SelectItem>
+                 <SelectItem value="Maintenance">Maintenance</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -290,13 +330,17 @@ function HousekeepingPage() {
                        <Sparkles className="h-4 w-4 text-green-400" />
                        Cleaned by {room.lastCleanedBy}
                     </div>
+                 ) : room.status === 'Maintenance' ? (
+                    <div className="text-sm text-blue-400 italic flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" /> Awaiting maintenance
+                    </div>
                 ) : (
                   <div className="text-sm text-muted-foreground italic">
                     Unassigned
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="pt-0">
+              <CardFooter className="pt-0 flex flex-col gap-2">
                 {room.status === 'Cleaning in Progress' ? (
                      <Button 
                       className="w-full" 
@@ -348,6 +392,36 @@ function HousekeepingPage() {
                   </DialogContent>
                 </Dialog>
                 )}
+
+                <Dialog open={maintenanceRoom?.id === room.id} onOpenChange={(isOpen) => !isOpen && setMaintenanceRoom(null)}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-blue-500/50 text-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
+                      onClick={() => setMaintenanceRoom(room)}
+                    >
+                        <Wrench className="mr-2" /> Request Maintenance
+                    </Button>
+                  </DialogTrigger>
+                   <DialogContent>
+                    <form onSubmit={handleMaintenanceRequest}>
+                      <DialogHeader>
+                        <DialogTitle>Request Maintenance for {room.name}</DialogTitle>
+                        <DialogDescription>
+                          Describe the issue that needs attention from the maintenance team.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Label htmlFor="issue">Maintenance Issue</Label>
+                        <Textarea id="issue" name="issue" placeholder="e.g., Leaky faucet in the bathroom" required className="mt-2"/>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" type="button" onClick={() => setMaintenanceRoom(null)}>Cancel</Button>
+                        <Button type="submit">Submit Request</Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </CardFooter>
             </Card>
           ))}
