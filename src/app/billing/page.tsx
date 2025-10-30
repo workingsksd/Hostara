@@ -22,8 +22,10 @@ import { FileDown, CreditCard, Utensils, Bed, CheckCircle } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useContext } from "react";
-import { BookingContext } from "@/context/BookingContext";
+import { BookingContext, Transaction } from "@/context/BookingContext";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 
 const statusVariant: { [key: string]: 'default' | 'secondary' } = {
@@ -63,6 +65,45 @@ function BillingPage() {
   const pendingPayments = transactions
     .filter(t => t.status === 'Pending')
     .reduce((sum, t) => sum + t.amount, 0);
+    
+  const handleExportReport = () => {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text("Financial Transaction Report", 14, 22);
+
+    // Add summary
+    doc.setFontSize(12);
+    doc.text(`Report Generated: ${new Date().toLocaleDateString()}`, 14, 32);
+    doc.text(`Today's Revenue: ${formatCurrency(todayRevenue)}`, 14, 38);
+    doc.text(`Total Pending Payments: ${formatCurrency(pendingPayments)}`, 14, 44);
+
+    // Add table
+    (doc as any).autoTable({
+        startY: 55,
+        head: [['Date', 'Guest', 'Type', 'Amount', 'Status']],
+        body: transactions.map(t => [
+            new Date(t.date).toLocaleDateString(),
+            t.guest,
+            t.type,
+            formatCurrency(t.amount),
+            t.status
+        ]),
+        headStyles: { fillColor: [11, 19, 43] }, // --primary color
+        styles: { font: 'Inter', halign: 'center' },
+        columnStyles: {
+            3: { halign: 'right' },
+        }
+    });
+
+    doc.save(`financial-report-${new Date().toISOString().split('T')[0]}.pdf`);
+
+    toast({
+        title: "Report Generated",
+        description: "Your PDF report has been downloaded.",
+    });
+  }
 
   return (
     <AppLayout>
@@ -71,7 +112,7 @@ function BillingPage() {
             <h1 className="text-3xl font-bold font-headline">
             Finance, Billing & Accounting
             </h1>
-            <Button>
+            <Button onClick={handleExportReport}>
                 <FileDown className="mr-2" /> Export Report
             </Button>
         </div>
