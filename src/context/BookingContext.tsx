@@ -50,6 +50,14 @@ export type Transaction = {
     status: 'Paid' | 'Pending';
 };
 
+export type StaffTask = {
+    id: string;
+    title: string;
+    assignedToId: string; // Staff member ID
+    status: 'Pending' | 'In Progress' | 'Completed';
+    dueDate: string;
+};
+
 
 const initialBookings: Booking[] = [
   {
@@ -119,6 +127,12 @@ const initialTransactions: Transaction[] = [
     { id: 'txn-004', guest: 'Sophia Loren', date: '2024-08-17', type: 'Lodge', amount: 9800, status: 'Paid'},
 ];
 
+const initialTasks: StaffTask[] = [
+    { id: 'task-1', title: 'Deep clean Suite 301', assignedToId: 'staff-1', status: 'In Progress', dueDate: '2024-08-21' },
+    { id: 'task-2', title: 'Fix AC in Lodge 3B', assignedToId: 'staff-2', status: 'Pending', dueDate: '2024-08-21' },
+    { id: 'task-3', title: 'Restock minibar for Room 101', assignedToId: 'staff-1', status: 'Pending', dueDate: '2024-08-20'},
+];
+
 
 interface BookingContextType {
   bookings: Booking[];
@@ -132,6 +146,9 @@ interface BookingContextType {
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
+  tasks: StaffTask[];
+  addTask: (task: Omit<StaffTask, 'id' | 'status'>) => void;
+  updateTaskStatus: (taskId: string, status: StaffTask['status']) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -146,6 +163,9 @@ export const BookingContext = createContext<BookingContextType>({
   updateOrderStatus: () => {},
   transactions: [],
   addTransaction: () => {},
+  tasks: [],
+  addTask: () => {},
+  updateTaskStatus: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -153,6 +173,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(initialMaintenanceTasks);
   const [orders, setOrders] = useState<Order[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [tasks, setTasks] = useState<StaffTask[]>(initialTasks);
 
   const addBooking = (booking: Booking) => {
     setBookings(prev => [booking, ...prev]);
@@ -203,9 +224,28 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     };
     setTransactions(prev => [newTransaction, ...prev]);
   };
+  
+  const addTask = (task: Omit<StaffTask, 'id' | 'status'>) => {
+    const newTask: StaffTask = {
+      ...task,
+      id: `task-${Date.now()}`,
+      status: 'Pending',
+    };
+    setTasks(prev => [newTask, ...prev]);
+  };
+  
+  const updateTaskStatus = (taskId: string, status: StaffTask['status']) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status } : t));
+  };
 
   return (
-    <BookingContext.Provider value={{ bookings, addBooking, updateBooking, deleteBooking, maintenanceTasks, addMaintenanceTask, orders, addOrder, updateOrderStatus, transactions, addTransaction }}>
+    <BookingContext.Provider value={{ 
+        bookings, addBooking, updateBooking, deleteBooking, 
+        maintenanceTasks, addMaintenanceTask, 
+        orders, addOrder, updateOrderStatus, 
+        transactions, addTransaction,
+        tasks, addTask, updateTaskStatus
+    }}>
       {children}
     </BookingContext.Provider>
   );
