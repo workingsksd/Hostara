@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { placeholderImages } from '@/lib/placeholder-images';
 import { MoreHorizontal, PlusCircle, Camera } from 'lucide-react';
 import {
   DropdownMenu,
@@ -285,20 +284,20 @@ function GuestsPage() {
           {selectedBooking && (
             <div className="space-y-4 py-4 text-sm">
                 <div className="flex items-center">
-                    <p className="w-2/5 text-muted-foreground">Guest Name</p>
-                    <p className="w-3/5 font-medium">{selectedBooking.guest.name}</p>
+                    <div className="w-2/5 text-muted-foreground">Guest Name</div>
+                    <div className="w-3/5 font-medium">{selectedBooking.guest.name}</div>
                 </div>
                 <div className="flex items-center">
-                    <p className="w-2/5 text-muted-foreground">Guest Email</p>
-                    <p className="w-3/5 font-medium">{selectedBooking.guest.email}</p>
+                    <div className="w-2/5 text-muted-foreground">Guest Email</div>
+                    <div className="w-3/5 font-medium">{selectedBooking.guest.email}</div>
                 </div>
                  <div className="flex items-center">
-                    <p className="w-2/5 text-muted-foreground">Check-in</p>
-                    <p className="w-3/5 font-medium">{format(new Date(selectedBooking.checkIn), "PPP")}</p>
+                    <div className="w-2/5 text-muted-foreground">Check-in</div>
+                    <div className="w-3/5 font-medium">{format(new Date(selectedBooking.checkIn), "PPP")}</div>
                 </div>
                  <div className="flex items-center">
-                    <p className="w-2/5 text-muted-foreground">Check-out</p>
-                    <p className="w-3/5 font-medium">{format(new Date(selectedBooking.checkOut), "PPP")}</p>
+                    <div className="w-2/fiv className="w-3/5 font-medium"ve text-muted-foreground">Check-out</div>
+                    <div className="w-3/5 font-medium">{format(new Date(selectedBooking.checkOut), "PPP")}</div>
                 </div>
                  <div className="flex items-center">
                     <div className="w-2/5 text-muted-foreground">Status</div>
@@ -307,8 +306,8 @@ function GuestsPage() {
                     </div>
                 </div>
                 <div className="flex items-center">
-                    <p className="w-2/5 text-muted-foreground">Room</p>
-                    <p className="w-3/5 font-medium">{selectedBooking.room}</p>
+                    <div className="w-2/5 text-muted-foreground">Room</div>
+                    <div className="w-3/5 font-medium">{selectedBooking.room}</div>
                 </div>
             </div>
           )}
@@ -416,5 +415,3 @@ function DatePicker({name, initialDate}: {name: string, initialDate?: Date}) {
 
 
 export default withAuth(GuestsPage);
-
-    
