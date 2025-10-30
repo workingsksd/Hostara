@@ -24,6 +24,33 @@ export type MaintenanceTask = {
   priority: 'High' | 'Medium' | 'Low' | 'Critical';
 }
 
+export type OrderItem = {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+};
+
+export type Order = {
+    id: string;
+    guestId: string;
+    guestName: string;
+    items: OrderItem[];
+    total: number;
+    status: 'New' | 'In Progress' | 'Completed' | 'Cancelled';
+    createdAt: string;
+};
+
+export type Transaction = {
+    id: string;
+    guest: string;
+    date: string;
+    type: string;
+    amount: number;
+    status: 'Paid' | 'Pending';
+};
+
+
 const initialBookings: Booking[] = [
   {
     id: 'booking-1',
@@ -45,7 +72,7 @@ const initialBookings: Booking[] = [
       email: 'marcus@example.com',
       avatar: placeholderImages.find(p => p.id === 'user-avatar-1')?.imageUrl,
     },
-    status: 'Confirmed',
+    status: 'Checked-in',
     checkIn: '2024-08-18',
     checkOut: '2024-08-22',
     type: 'Lodge',
@@ -85,6 +112,13 @@ const initialMaintenanceTasks: MaintenanceTask[] = [
   { room: "Restaurant", issue: "Freezer Malfunction", priority: "Critical" },
 ];
 
+const initialTransactions: Transaction[] = [
+    { id: 'txn-001', guest: 'Eleanor Vance', date: '2024-08-20', type: 'Room', amount: 12500, status: 'Paid'},
+    { id: 'txn-002', guest: 'Marcus Thorne', date: '2024-08-19', type: 'Restaurant', amount: 3200, status: 'Paid'},
+    { id: 'txn-003', guest: 'John Doe', date: '2024-08-18', type: 'Room Service', amount: 1500, status: 'Pending'},
+    { id: 'txn-004', guest: 'Sophia Loren', date: '2024-08-17', type: 'Lodge', amount: 9800, status: 'Paid'},
+];
+
 
 interface BookingContextType {
   bookings: Booking[];
@@ -93,6 +127,11 @@ interface BookingContextType {
   deleteBooking: (bookingId: string) => void;
   maintenanceTasks: MaintenanceTask[];
   addMaintenanceTask: (task: MaintenanceTask) => void;
+  orders: Order[];
+  addOrder: (order: Order) => void;
+  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  transactions: Transaction[];
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -102,11 +141,18 @@ export const BookingContext = createContext<BookingContextType>({
   deleteBooking: () => {},
   maintenanceTasks: [],
   addMaintenanceTask: () => {},
+  orders: [],
+  addOrder: () => {},
+  updateOrderStatus: () => {},
+  transactions: [],
+  addTransaction: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(initialMaintenanceTasks);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
 
   const addBooking = (booking: Booking) => {
     setBookings(prev => [booking, ...prev]);
@@ -124,10 +170,42 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   
   const addMaintenanceTask = (task: MaintenanceTask) => {
     setMaintenanceTasks(prev => [task, ...prev]);
-  }
+  };
+
+  const addOrder = (order: Order) => {
+    setOrders(prev => [order, ...prev]);
+  };
+
+  const updateOrderStatus = (orderId: string, status: Order['status']) => {
+    setOrders(prev =>
+      prev.map(o => {
+        if (o.id === orderId) {
+          if (status === 'Completed') {
+              addTransaction({
+                  guest: o.guestName,
+                  type: 'Room Service',
+                  amount: o.total,
+                  status: 'Pending',
+              })
+          }
+          return { ...o, status };
+        }
+        return o;
+      })
+    );
+  };
+  
+  const addTransaction = (transaction: Omit<Transaction, 'id' | 'date'>) => {
+    const newTransaction: Transaction = {
+        ...transaction,
+        id: `txn-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+    };
+    setTransactions(prev => [newTransaction, ...prev]);
+  };
 
   return (
-    <BookingContext.Provider value={{ bookings, addBooking, updateBooking, deleteBooking, maintenanceTasks, addMaintenanceTask }}>
+    <BookingContext.Provider value={{ bookings, addBooking, updateBooking, deleteBooking, maintenanceTasks, addMaintenanceTask, orders, addOrder, updateOrderStatus, transactions, addTransaction }}>
       {children}
     </BookingContext.Provider>
   );

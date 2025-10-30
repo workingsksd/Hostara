@@ -23,7 +23,8 @@ import {
   LineChart,
   Plug,
   Shield,
-  Camera
+  Camera,
+  ChefHat
 } from "lucide-react"
 
 export function AppSidebar() {
@@ -76,6 +77,14 @@ export function AppSidebar() {
               <Link href="/restaurant">
                 <UtensilsCrossed />
                 <span>Restaurant</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Kitchen Orders">
+              <Link href="/restaurant/orders">
+                <ChefHat />
+                <span>Kitchen</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -21,13 +21,9 @@ import { Button } from "@/components/ui/button";
 import { FileDown, CreditCard, Utensils, Bed } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
+import { useContext } from "react";
+import { BookingContext } from "@/context/BookingContext";
 
-const transactions = [
-    { id: 'txn-001', guest: 'Eleanor Vance', date: '2024-08-20', type: 'Room', amount: '₹12,500', status: 'Paid'},
-    { id: 'txn-002', guest: 'Marcus Thorne', date: '2024-08-19', type: 'Restaurant', amount: '₹3,200', status: 'Paid'},
-    { id: 'txn-003', guest: 'John Doe', date: '2024-08-18', type: 'Room Service', amount: '₹1,500', status: 'Pending'},
-    { id: 'txn-004', guest: 'Sophia Loren', date: '2024-08-17', type: 'Lodge', amount: '₹9,800', status: 'Paid'},
-]
 
 const statusVariant: { [key: string]: 'default' | 'secondary' } = {
   'Paid': 'default',
@@ -43,6 +39,20 @@ const typeIcon: { [key: string]: React.ReactNode } = {
 
 
 function BillingPage() {
+  const { transactions } = useContext(BookingContext);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+  }
+
+  const todayRevenue = transactions
+    .filter(t => new Date(t.date).toDateString() === new Date().toDateString() && t.status === 'Paid')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const pendingPayments = transactions
+    .filter(t => t.status === 'Pending')
+    .reduce((sum, t) => sum + t.amount, 0);
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -56,16 +66,16 @@ function BillingPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-             <StatCard title="Today's Revenue" value="₹45,750" icon={<CreditCard />} />
-             <StatCard title="Pending Payments" value="₹1,500" icon={<CreditCard />} variant="destructive" />
-             <StatCard title="Total Transactions" value="23" icon={<CreditCard />} />
+             <StatCard title="Today's Revenue" value={formatCurrency(todayRevenue)} icon={<CreditCard />} />
+             <StatCard title="Pending Payments" value={formatCurrency(pendingPayments)} icon={<CreditCard />} variant="destructive" />
+             <StatCard title="Total Transactions" value={transactions.length.toString()} icon={<CreditCard />} />
         </div>
 
         <Card className="bg-card/60 backdrop-blur-sm border border-border/20">
           <CardHeader>
             <CardTitle>Unified Billing System</CardTitle>
             <CardDescription>
-              This is a placeholder for the unified billing system for rooms, restaurants, and extras. Full implementation is coming soon.
+              A centralized log of all financial transactions across rooms, restaurants, and other services.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -85,12 +95,12 @@ function BillingPage() {
                         <TableRow key={t.id}>
                             <TableCell className="font-mono text-xs">{t.id}</TableCell>
                             <TableCell>{t.guest}</TableCell>
-                            <TableCell>{t.date}</TableCell>
+                            <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                             <TableCell className="flex items-center gap-2">
                                 {typeIcon[t.type]}
                                 {t.type}
                             </TableCell>
-                            <TableCell className="font-medium">{t.amount}</TableCell>
+                            <TableCell className="font-medium">{formatCurrency(t.amount)}</TableCell>
                             <TableCell>
                                 <Badge variant={statusVariant[t.status]}>{t.status}</Badge>
                             </TableCell>
