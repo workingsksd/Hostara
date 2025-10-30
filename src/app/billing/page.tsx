@@ -16,16 +16,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileDown, CreditCard, Utensils, Bed, CheckCircle } from "lucide-react";
+import { FileDown, CreditCard, Utensils, Bed, CheckCircle, PlusCircle } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { BookingContext, Transaction } from "@/context/BookingContext";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const statusVariant: { [key: string]: 'default' | 'secondary' } = {
@@ -42,8 +54,9 @@ const typeIcon: { [key: string]: React.ReactNode } = {
 
 
 function BillingPage() {
-  const { transactions, settleTransaction } = useContext(BookingContext);
+  const { transactions, settleTransaction, addTransaction } = useContext(BookingContext);
   const { toast } = useToast();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
@@ -57,6 +70,33 @@ function BillingPage() {
       className: "bg-green-500 text-white",
     });
   };
+  
+  const handleAddTransaction = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newTransactionData = {
+        guest: formData.get('guest') as string,
+        type: formData.get('type') as string,
+        amount: parseFloat(formData.get('amount') as string),
+        status: formData.get('status') as 'Paid' | 'Pending',
+    };
+
+    if (isNaN(newTransactionData.amount)) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Amount',
+            description: 'Please enter a valid number for the amount.'
+        });
+        return;
+    }
+    
+    addTransaction(newTransactionData);
+    toast({
+        title: 'Transaction Added',
+        description: `A new transaction for ${newTransactionData.guest} has been recorded.`
+    });
+    setIsAddDialogOpen(false);
+  }
 
   const todayRevenue = transactions
     .filter(t => new Date(t.date).toDateString() === new Date().toDateString() && t.status === 'Paid')
@@ -109,12 +149,64 @@ function BillingPage() {
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold font-headline">
-            Finance, Billing & Accounting
-            </h1>
-            <Button onClick={handleExportReport}>
-                <FileDown className="mr-2" /> Export Report
-            </Button>
+            <div>
+                <h1 className="text-3xl font-bold font-headline">
+                Finance, Billing & Accounting
+                </h1>
+                <p className="text-muted-foreground">Manage all financial transactions and reporting.</p>
+            </div>
+            <div className="flex items-center gap-2">
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="secondary">
+                            <PlusCircle className="mr-2" /> Add Transaction
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <form onSubmit={handleAddTransaction}>
+                            <DialogHeader>
+                                <DialogTitle>Add New Transaction</DialogTitle>
+                                <DialogDescription>Manually record a new charge or payment.</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="guest">Guest Name</Label>
+                                    <Input id="guest" name="guest" required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="type">Transaction Type</Label>
+                                        <Input id="type" name="type" placeholder="e.g., Minibar, Laundry" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="amount">Amount (₹)</Label>
+                                        <Input id="amount" name="amount" type="number" step="0.01" required />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="status">Status</Label>
+                                     <Select name="status" defaultValue="Pending">
+                                        <SelectTrigger id="status">
+                                            <SelectValue placeholder="Select status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Pending">Pending</SelectItem>
+                                            <SelectItem value="Paid">Paid</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">Save Transaction</Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+                <Button onClick={handleExportReport}>
+                    <FileDown className="mr-2" /> Export Report
+                </Button>
+            </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -150,7 +242,7 @@ function BillingPage() {
                             <TableCell>{t.guest}</TableCell>
                             <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                             <TableCell className="flex items-center gap-2">
-                                {typeIcon[t.type]}
+                                {typeIcon[t.type] || <CreditCard className="h-4 w-4 text-muted-foreground" />}
                                 {t.type}
                             </TableCell>
                             <TableCell className="font-medium text-right">{formatCurrency(t.amount)}</TableCell>
@@ -192,3 +284,5 @@ function StatCard({ title, value, icon, variant }: { title: string, value: strin
 
 
 export default withAuth(BillingPage);
+
+    
