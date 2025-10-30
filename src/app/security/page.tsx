@@ -169,7 +169,7 @@ function SecurityPage() {
                                 </Avatar>
                                 {v.name}
                             </TableCell>
-                            <TableCell>{v.date}</TableCell>
+                            <TableCell>{format(new Date(v.date), 'PP')}</TableCell>
                             <TableCell>{v.timeIn}</TableCell>
                             <TableCell>{v.timeOut || '---'}</TableCell>
                             <TableCell>{v.visiting}</TableCell>
@@ -195,3 +195,5 @@ function SecurityPage() {
 }
 
 export default withAuth(SecurityPage);
+
+    
