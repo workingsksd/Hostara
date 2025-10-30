@@ -1,3 +1,4 @@
+
 import {z} from 'genkit';
 
 export const PredictiveInventoryInputSchema = z.object({
@@ -7,7 +8,7 @@ export const PredictiveInventoryInputSchema = z.object({
 });
 export type PredictiveInventoryInput = z.infer<typeof PredictiveInventoryInputSchema>;
 
-const PredictiveInventoryOutputSchema = z.object({
+export const PredictiveInventoryOutputSchema = z.object({
   ingredient: z.string().describe('The name of the ingredient.'),
   predictedStockOutDate: z.string().describe('The predicted date when the ingredient will run out of stock (ISO format).'),
   purchaseSuggestion: z.string().describe('Suggested purchase quantity to avoid stock out.'),

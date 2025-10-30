@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import { PredictiveInventoryInputSchema, PredictiveInventoryOutputSchema, type PredictiveInventoryInput, type PredictiveInventoryOutput } from '@/ai/schemas/predictive-inventory-schema';
+import { z } from 'zod';
 
 
 export async function predictStockOut(input: PredictiveInventoryInput): Promise<PredictiveInventoryOutput[]> {
