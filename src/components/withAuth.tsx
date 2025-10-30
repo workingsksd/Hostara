@@ -4,59 +4,78 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
+// Define page permissions based on roles
+const pagePermissions: { [key: string]: string[] } = {
+    '/': ['manager', 'staff', 'chef', 'guest'], // Everyone can see the dashboard
+    '/guests': ['manager', 'staff'],
+    '/guests/kyc': ['manager', 'staff'],
+    '/housekeeping': ['manager', 'staff'],
+    '/restaurant': ['manager', 'chef', 'staff'],
+    '/restaurant/orders': ['manager', 'chef', 'staff'],
+    '/inventory': ['manager', 'chef'],
+    '/staff': ['manager'],
+    '/billing': ['manager'],
+    '/reporting': ['manager'],
+    '/integrations': ['manager'],
+    '/security': ['manager', 'staff'],
+};
+
+
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
   const AuthComponent = (props: P) => {
     const router = useRouter();
     const pathname = usePathname();
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
     useEffect(() => {
-      // This is a mock authentication check. In a real app, you'd verify a token.
       const authenticated = localStorage.getItem('authenticated') === 'true';
+      const userRole = localStorage.getItem('userRole') as string | null;
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
 
       if (isAuthPage) {
         if (authenticated) {
-          // If user is on login/register but already logged in, redirect to home
           router.replace('/');
+          setAuthStatus('authenticated');
         } else {
-          // Allow access to login/register if not authenticated
-          setIsAuthenticated(false);
+          setAuthStatus('unauthenticated');
         }
       } else {
         if (!authenticated) {
-          // If user is not on an auth page and not logged in, redirect to login
           router.replace('/login');
+          setAuthStatus('unauthenticated');
         } else {
-          // Allow access to protected page if authenticated
-          setIsAuthenticated(true);
+          // Check role-based permissions
+          const allowedRoles = pagePermissions[pathname] || ['manager']; // Default to manager only for unknown routes
+          if (userRole && allowedRoles.includes(userRole)) {
+            setAuthStatus('authenticated');
+          } else {
+            // If user does not have permission, redirect to dashboard
+            console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
+            router.replace('/');
+            // Keep loading status to prevent rendering while redirecting
+          }
         }
       }
     }, [router, pathname]);
 
-    // Render a loading state while checking auth
-    if (isAuthenticated === null) {
+    if (authStatus === 'loading') {
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
           <p>Loading...</p>
         </div>
       );
     }
-
+    
     const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-
-    // If on an auth page and not authenticated, show the page.
-    if (isAuthPage && !isAuthenticated) {
+    if (isAuthPage && authStatus === 'unauthenticated') {
         return <WrappedComponent {...props} />;
     }
 
-    // If on a protected page and authenticated, show the page.
-    if (!isAuthPage && isAuthenticated) {
+    if (!isAuthPage && authStatus === 'authenticated') {
         return <WrappedComponent {...props} />;
     }
 
-    // Otherwise, we are likely in a redirect state, so render nothing to avoid flashes.
-    return null;
+    return null; // Render nothing during redirects
   };
 
   AuthComponent.displayName = `withAuth(${(WrappedComponent.displayName || WrappedComponent.name || 'Component')})`;
