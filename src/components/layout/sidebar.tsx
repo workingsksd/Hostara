@@ -56,6 +56,14 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="KYC">
+              <Link href="/guests/kyc">
+                <Camera />
+                <span>KYC Scanner</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Housekeeping">
               <Link href="/housekeeping">
                 <BedDouble />
@@ -135,5 +143,3 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
-
-    

@@ -296,7 +296,7 @@ function GuestsPage() {
                     <div className="w-3/5 font-medium">{format(new Date(selectedBooking.checkIn), "PPP")}</div>
                 </div>
                  <div className="flex items-center">
-                    <div className="w-2/fiv className="w-3/5 font-medium"ve text-muted-foreground">Check-out</div>
+                    <div className="w-2/5 text-muted-foreground">Check-out</div>
                     <div className="w-3/5 font-medium">{format(new Date(selectedBooking.checkOut), "PPP")}</div>
                 </div>
                  <div className="flex items-center">
