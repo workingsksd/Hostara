@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -15,8 +16,28 @@ import { PlusCircle, SlidersHorizontal } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
 import { placeholderImages } from "@/lib/placeholder-images";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
-const staff = [
+type StaffMember = {
+  name: string;
+  role: string;
+  status: "On Duty" | "Off Duty";
+  avatar: string | undefined;
+  shift: string;
+};
+
+const initialStaff: StaffMember[] = [
   {
     name: "Maria Garcia",
     role: "Head Housekeeper",
@@ -54,6 +75,29 @@ const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 
 
 
 function StaffPage() {
+  const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleAddStaff = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newStaffMember: StaffMember = {
+      name: formData.get('name') as string,
+      role: formData.get('role') as string,
+      shift: formData.get('shift') as string,
+      status: "Off Duty", // Default status for new staff
+      avatar: `https://picsum.photos/seed/staff${Date.now()}/40/40`,
+    };
+
+    setStaff(prev => [newStaffMember, ...prev]);
+    setIsAddDialogOpen(false);
+    toast({
+      title: 'Staff Member Added',
+      description: `${newStaffMember.name} has been added to the team.`,
+    });
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -66,16 +110,48 @@ function StaffPage() {
                 <SlidersHorizontal className="mr-2" />
                 Filter Roles
             </Button>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Staff
-            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add New Staff
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={handleAddStaff}>
+                  <DialogHeader>
+                    <DialogTitle>Add New Staff Member</DialogTitle>
+                    <DialogDescription>
+                      Enter the details for the new staff member.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name</Label>
+                      <Input id="name" name="name" placeholder="e.g., Jane Doe" required />
+                    </div>
+                     <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Input id="role" name="role" placeholder="e.g., Front Desk" required />
+                    </div>
+                     <div className="space-y-2">
+                      <Label htmlFor="shift">Shift</Label>
+                      <Input id="shift" name="shift" placeholder="e.g., 9am - 5pm" required />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                    <Button type="submit">Save Staff Member</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
         <Card className="bg-card/60 backdrop-blur-sm border border-border/20">
           <CardHeader>
             <CardTitle>Team and Role Administration</CardTitle>
             <CardDescription>
-              Manage employees, roles, attendance, and tasks. This is a placeholder and will be fully implemented soon.
+              Manage employees, roles, attendance, and tasks.
             </CardDescription>
           </CardHeader>
           <CardContent>
