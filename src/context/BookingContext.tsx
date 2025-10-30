@@ -121,9 +121,9 @@ const initialMaintenanceTasks: MaintenanceTask[] = [
 ];
 
 const initialTransactions: Transaction[] = [
-    { id: 'txn-001', guest: 'Eleanor Vance', date: '2024-08-20', type: 'Room', amount: 12500, status: 'Paid'},
-    { id: 'txn-002', guest: 'Marcus Thorne', date: '2024-08-19', type: 'Restaurant', amount: 3200, status: 'Paid'},
-    { id: 'txn-003', guest: 'John Doe', date: '2024-08-18', type: 'Room Service', amount: 1500, status: 'Pending'},
+    { id: 'txn-001', guest: 'Eleanor Vance', date: new Date().toISOString(), type: 'Room', amount: 12500, status: 'Paid'},
+    { id: 'txn-002', guest: 'Marcus Thorne', date: new Date().toISOString(), type: 'Restaurant', amount: 3200, status: 'Paid'},
+    { id: 'txn-003', guest: 'John Doe', date: new Date().toISOString(), type: 'Room Service', amount: 1500, status: 'Pending'},
     { id: 'txn-004', guest: 'Sophia Loren', date: '2024-08-17', type: 'Lodge', amount: 9800, status: 'Paid'},
 ];
 
@@ -146,6 +146,7 @@ interface BookingContextType {
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
+  settleTransaction: (transactionId: string) => void;
   tasks: StaffTask[];
   addTask: (task: Omit<StaffTask, 'id' | 'status'>) => void;
   updateTaskStatus: (taskId: string, status: StaffTask['status']) => void;
@@ -163,6 +164,7 @@ export const BookingContext = createContext<BookingContextType>({
   updateOrderStatus: () => {},
   transactions: [],
   addTransaction: () => {},
+  settleTransaction: () => {},
   tasks: [],
   addTask: () => {},
   updateTaskStatus: () => {},
@@ -220,11 +222,15 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const newTransaction: Transaction = {
         ...transaction,
         id: `txn-${Date.now()}`,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString(),
     };
     setTransactions(prev => [newTransaction, ...prev]);
   };
   
+  const settleTransaction = (transactionId: string) => {
+    setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, status: 'Paid' } : t));
+  };
+
   const addTask = (task: Omit<StaffTask, 'id' | 'status'>) => {
     const newTask: StaffTask = {
       ...task,
@@ -243,7 +249,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         bookings, addBooking, updateBooking, deleteBooking, 
         maintenanceTasks, addMaintenanceTask, 
         orders, addOrder, updateOrderStatus, 
-        transactions, addTransaction,
+        transactions, addTransaction, settleTransaction,
         tasks, addTask, updateTaskStatus
     }}>
       {children}

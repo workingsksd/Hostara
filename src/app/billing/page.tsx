@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileDown, CreditCard, Utensils, Bed } from "lucide-react";
+import { FileDown, CreditCard, Utensils, Bed, CheckCircle } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useContext } from "react";
 import { BookingContext } from "@/context/BookingContext";
+import { useToast } from "@/hooks/use-toast";
 
 
 const statusVariant: { [key: string]: 'default' | 'secondary' } = {
@@ -39,11 +40,21 @@ const typeIcon: { [key: string]: React.ReactNode } = {
 
 
 function BillingPage() {
-  const { transactions } = useContext(BookingContext);
+  const { transactions, settleTransaction } = useContext(BookingContext);
+  const { toast } = useToast();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   }
+
+  const handleSettlePayment = (transactionId: string) => {
+    settleTransaction(transactionId);
+    toast({
+      title: "Payment Settled",
+      description: "The transaction has been successfully marked as paid.",
+      className: "bg-green-500 text-white",
+    });
+  };
 
   const todayRevenue = transactions
     .filter(t => new Date(t.date).toDateString() === new Date().toDateString() && t.status === 'Paid')
@@ -88,6 +99,7 @@ function BillingPage() {
                         <TableHead>Type</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -103,6 +115,14 @@ function BillingPage() {
                             <TableCell className="font-medium text-right">{formatCurrency(t.amount)}</TableCell>
                             <TableCell className="text-center">
                                 <Badge variant={statusVariant[t.status]}>{t.status}</Badge>
+                            </TableCell>
+                             <TableCell className="text-right">
+                                {t.status === 'Pending' && (
+                                    <Button variant="outline" size="sm" onClick={() => handleSettlePayment(t.id)}>
+                                        <CheckCircle className="mr-2 h-3 w-3" />
+                                        Settle Payment
+                                    </Button>
+                                )}
                             </TableCell>
                         </TableRow>
                     ))}
