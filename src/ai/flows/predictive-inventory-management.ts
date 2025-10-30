@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for predictive inventory management.
@@ -5,26 +6,11 @@
  * The flow predicts when a restaurant will run out of ingredients and suggests purchases.
  * It includes the following:
  * - predictStockOut - A function that triggers the stock out prediction and purchase suggestions.
- * - PredictiveInventoryInput - The input type for the predictStockOut function.
- * - PredictiveInventoryOutput - The return type for the predictStockOut function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { PredictiveInventoryInputSchema, PredictiveInventoryOutputSchema, type PredictiveInventoryInput, type PredictiveInventoryOutput } from '@/ai/schemas/predictive-inventory-schema';
 
-const PredictiveInventoryInputSchema = z.object({
-  historicalStockData: z.string().describe('Historical data of stock levels and usage for each ingredient.'),
-  leadTimeDays: z.number().describe('The number of days in advance to predict stock outs.'),
-  safetyStockDays: z.number().describe('The number of days of stock to keep as safety stock.'),
-});
-export type PredictiveInventoryInput = z.infer<typeof PredictiveInventoryInputSchema>;
-
-const PredictiveInventoryOutputSchema = z.object({
-  ingredient: z.string().describe('The name of the ingredient.'),
-  predictedStockOutDate: z.string().describe('The predicted date when the ingredient will run out of stock (ISO format).'),
-  purchaseSuggestion: z.string().describe('Suggested purchase quantity to avoid stock out.'),
-});
-export type PredictiveInventoryOutput = z.infer<typeof PredictiveInventoryOutputSchema>;
 
 export async function predictStockOut(input: PredictiveInventoryInput): Promise<PredictiveInventoryOutput[]> {
   return predictiveInventoryFlow(input);

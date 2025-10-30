@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { Camera, RefreshCw, UserCheck, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useEffect, useRef, useState, useContext } from 'react';
-import { extractIdInfo, OcrOutput } from '@/ai/flows/kyc-ocr-flow';
+import { extractIdInfo } from '@/ai/flows/kyc-ocr-flow';
+import { type OcrOutput } from '@/ai/schemas/kyc-ocr-schema';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Booking, BookingContext } from '@/context/BookingContext';
