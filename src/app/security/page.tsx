@@ -195,5 +195,3 @@ function SecurityPage() {
 }
 
 export default withAuth(SecurityPage);
-
-    
