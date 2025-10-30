@@ -31,10 +31,10 @@ const statusVariant: { [key: string]: 'default' | 'secondary' } = {
 }
 
 const typeIcon: { [key: string]: React.ReactNode } = {
-    'Room': <Bed className="h-4 w-4" />,
-    'Lodge': <Bed className="h-4 w-4" />,
-    'Restaurant': <Utensils className="h-4 w-4" />,
-    'Room Service': <Utensils className="h-4 w-4" />,
+    'Room': <Bed className="h-4 w-4 text-muted-foreground" />,
+    'Lodge': <Bed className="h-4 w-4 text-muted-foreground" />,
+    'Restaurant': <Utensils className="h-4 w-4 text-muted-foreground" />,
+    'Room Service': <Utensils className="h-4 w-4 text-muted-foreground" />,
 }
 
 
@@ -71,7 +71,7 @@ function BillingPage() {
              <StatCard title="Total Transactions" value={transactions.length.toString()} icon={<CreditCard />} />
         </div>
 
-        <Card className="bg-card/60 backdrop-blur-sm border border-border/20">
+        <Card className="bg-card/60 backdrop-blur-sm border border-border/20 shadow-[0_8px_32px_0_hsl(var(--primary)/0.1)]">
           <CardHeader>
             <CardTitle>Unified Billing System</CardTitle>
             <CardDescription>
@@ -86,8 +86,8 @@ function BillingPage() {
                         <TableHead>Guest</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -100,8 +100,8 @@ function BillingPage() {
                                 {typeIcon[t.type]}
                                 {t.type}
                             </TableCell>
-                            <TableCell className="font-medium">{formatCurrency(t.amount)}</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium text-right">{formatCurrency(t.amount)}</TableCell>
+                            <TableCell className="text-center">
                                 <Badge variant={statusVariant[t.status]}>{t.status}</Badge>
                             </TableCell>
                         </TableRow>
