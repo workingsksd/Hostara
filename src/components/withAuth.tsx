@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -22,7 +21,7 @@ const pagePermissions: { [key: string]: Role[] } = {
     '/reporting': ['Admin', 'Finance Manager', 'Finance'],
     '/integrations': ['Admin'],
     '/security': ['Admin', 'Security Staff'],
-    '/guest-portal': ['Guest'],
+    '/guest-portal': ['Admin'],
 };
 
 const defaultRoutes: { [key in Exclude<Role, null>]: string } = {

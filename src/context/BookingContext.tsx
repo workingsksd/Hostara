@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useState, ReactNode, FC, useEffect } from 'react';
@@ -58,7 +57,7 @@ export type StaffTask = {
     dueDate: string;
 };
 
-type GuestProfile = {
+export type GuestProfile = {
     email: string;
     name: string;
     avatar: string | undefined;
