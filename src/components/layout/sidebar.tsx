@@ -23,6 +23,7 @@ import {
   Shield,
   UserCheck,
   HeartPulse,
+  TrendingUp,
 } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -47,6 +48,7 @@ const navLinks: NavLink[] = [
     { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
     { href: "/staff", icon: UsersRound, label: "HR Management", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
     { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+    { href: "/revenue", icon: TrendingUp, label: "Revenue", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
     { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
     { href: "/security", icon: Shield, label: "Security", roles: ['Admin', 'Security Staff'], entities: ['Hotel', 'Lodge']},
     { href: "/reporting", icon: LineChart, label: "Analytics", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
@@ -70,6 +72,10 @@ export function AppSidebar() {
   const hasAccess = (link: NavLink) => {
     if (!userRole || !organisationType || !link.entities.includes(organisationType)) {
       return false;
+    }
+
+    if (organisationType === 'Lodge' && userRole !== 'Admin' && link.href === '/') {
+        return false;
     }
     
     // Admin has access to everything within their organisation type
