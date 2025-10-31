@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AppLayout } from '@/components/layout/app-layout';
@@ -186,18 +185,20 @@ function KYCScannerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {hasCameraPermission === false && (
-              <Alert variant="destructive">
-                <Camera className="h-4 w-4" />
-                <AlertTitle>Camera Access Required</AlertTitle>
-                <AlertDescription>
-                  Please allow camera access in your browser to use this feature. You may need to refresh the page after granting permission.
-                </AlertDescription>
-              </Alert>
-            )}
             
             <div className="aspect-video w-full max-w-2xl mx-auto bg-muted/50 rounded-lg overflow-hidden border border-border/20 relative shadow-inner">
                 <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                {hasCameraPermission === false && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Alert variant="destructive" className="w-auto">
+                        <Camera className="h-4 w-4" />
+                        <AlertTitle>Camera Access Required</AlertTitle>
+                        <AlertDescription>
+                        Please allow camera access in your browser settings.
+                        </AlertDescription>
+                    </Alert>
+                    </div>
+                )}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-[85%] h-[70%] border-4 border-dashed border-primary/50 rounded-xl" />
                 </div>
@@ -205,7 +206,7 @@ function KYCScannerPage() {
             <canvas ref={canvasRef} className="hidden" />
 
             <div className="flex justify-center gap-4">
-              <Button size="lg" disabled={!hasCameraPermission || isScanning || isVerifying} onClick={handleScanId}>
+              <Button size="lg" disabled={hasCameraPermission !== true || isScanning || isVerifying} onClick={handleScanId}>
                 {isScanning ? (
                     <>
                         <Loader2 className="mr-2 animate-spin" />
@@ -218,7 +219,7 @@ function KYCScannerPage() {
                     </>
                 )}
               </Button>
-              <Button size="lg" variant="secondary" disabled={!hasCameraPermission || !idCardImage || isVerifying} onClick={handleVerifyFace}>
+              <Button size="lg" variant="secondary" disabled={hasCameraPermission !== true || !idCardImage || isVerifying} onClick={handleVerifyFace}>
                  {isVerifying ? (
                     <>
                         <Loader2 className="mr-2 animate-spin" />
@@ -287,3 +288,5 @@ function KYCScannerPage() {
 }
 
 export default withAuth(KYCScannerPage);
+
+    
