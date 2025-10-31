@@ -66,6 +66,38 @@ export type GuestProfile = {
     stayHistory: { room: string; checkIn: string; checkOut: string }[];
 }
 
+export type Vendor = {
+    id: string;
+    name: string;
+    contactPerson: string;
+    phone: string;
+    category: 'Food' | 'Linen' | 'Toiletries' | 'Maintenance';
+};
+
+export type InventoryItem = {
+    id: string;
+    name: string;
+    quantity: number;
+    category: 'Food' | 'Linen' | 'Toiletries' | 'Maintenance';
+    unit: 'kg' | 'liters' | 'pieces' | 'packets';
+};
+
+export type PurchaseOrderItem = {
+    itemId: string;
+    name: string;
+    quantity: number;
+    price: number;
+};
+
+export type PurchaseOrder = {
+    id: string;
+    vendorId: string;
+    date: string;
+    items: PurchaseOrderItem[];
+    status: 'Draft' | 'Ordered' | 'Partially Received' | 'Completed' | 'Cancelled';
+    totalAmount: number;
+};
+
 
 const initialBookings: Booking[] = [
   {
@@ -155,6 +187,19 @@ const initialTasks: StaffTask[] = [
     { id: 'task-3', title: 'Restock minibar for Room 101', assignedToId: 'staff-1', status: 'Pending', dueDate: '2024-08-20'},
 ];
 
+const initialVendors: Vendor[] = [
+    { id: 'vendor-1', name: 'Fresh Veggies Co.', contactPerson: 'Rajesh Kumar', phone: '9876543210', category: 'Food' },
+    { id: 'vendor-2', name: 'Hotel Supplies Inc.', contactPerson: 'Priya Sharma', phone: '8765432109', category: 'Linen' },
+    { id: 'vendor-3', name: 'HygienePro', contactPerson: 'Amit Patel', phone: '7654321098', category: 'Toiletries' },
+];
+
+const initialInventory: InventoryItem[] = [
+    { id: 'item-1', name: 'Tomatoes', quantity: 50, category: 'Food', unit: 'kg' },
+    { id: 'item-2', name: 'Onions', quantity: 100, category: 'Food', unit: 'kg' },
+    { id: 'item-3', name: 'Bath Towels', quantity: 200, category: 'Linen', unit: 'pieces' },
+    { id: 'item-4', name: 'Shampoo', quantity: 500, category: 'Toiletries', unit: 'pieces' },
+];
+
 
 interface BookingContextType {
   bookings: Booking[];
@@ -173,6 +218,14 @@ interface BookingContextType {
   addTask: (task: Omit<StaffTask, 'id' | 'status'>) => void;
   updateTaskStatus: (taskId: string, status: StaffTask['status']) => void;
   guestProfiles: GuestProfile[];
+  vendors: Vendor[];
+  addVendor: (vendor: Omit<Vendor, 'id'>) => void;
+  updateVendor: (vendor: Vendor) => void;
+  inventory: InventoryItem[];
+  purchaseOrders: PurchaseOrder[];
+  addPurchaseOrder: (po: Omit<PurchaseOrder, 'id'>) => void;
+  updatePurchaseOrderStatus: (poId: string, status: PurchaseOrder['status']) => void;
+  receiveStock: (poId: string, receivedItems: { itemId: string, quantity: number }[]) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -192,6 +245,14 @@ export const BookingContext = createContext<BookingContextType>({
   addTask: () => {},
   updateTaskStatus: () => {},
   guestProfiles: [],
+  vendors: [],
+  addVendor: () => {},
+  updateVendor: () => {},
+  inventory: [],
+  purchaseOrders: [],
+  addPurchaseOrder: () => {},
+  updatePurchaseOrderStatus: () => {},
+  receiveStock: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -201,12 +262,14 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [tasks, setTasks] = useState<StaffTask[]>(initialTasks);
   const [guestProfiles, setGuestProfiles] = useState<GuestProfile[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
+  const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
 
   useEffect(() => {
     const profiles: { [email: string]: GuestProfile } = {};
     const checkedOutBookings = bookings.filter(b => b.status === 'Checked-out');
 
-    // First, process all bookings to build up stay history for everyone
     bookings.forEach(booking => {
       const { email, name, avatar } = booking.guest;
       if (!profiles[email]) {
@@ -227,7 +290,6 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
       });
     });
 
-    // Then, process transactions to add spending data
     transactions.forEach(transaction => {
       const booking = bookings.find(b => b.guest.name === transaction.guest);
       if (booking) {
@@ -238,7 +300,6 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }
     });
 
-    // Finally, filter down to only include profiles of loyal guests
     const loyalGuestProfiles = Object.values(profiles).filter(profile => {
         const checkedOutCount = profile.stayHistory.filter(stay => 
             checkedOutBookings.some(b => 
@@ -321,6 +382,48 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status } : t));
   };
 
+  const addVendor = (vendor: Omit<Vendor, 'id'>) => {
+    const newVendor: Vendor = { ...vendor, id: `vendor-${Date.now()}` };
+    setVendors(prev => [newVendor, ...prev]);
+  };
+  
+  const updateVendor = (updatedVendor: Vendor) => {
+    setVendors(prev => prev.map(v => v.id === updatedVendor.id ? updatedVendor : v));
+  };
+
+  const addPurchaseOrder = (po: Omit<PurchaseOrder, 'id'>) => {
+    const newPO: PurchaseOrder = { ...po, id: `po-${Date.now()}` };
+    setPurchaseOrders(prev => [newPO, ...prev]);
+  };
+  
+  const updatePurchaseOrderStatus = (poId: string, status: PurchaseOrder['status']) => {
+    setPurchaseOrders(prev => prev.map(po => po.id === poId ? { ...po, status } : po));
+  };
+
+  const receiveStock = (poId: string, receivedItems: { itemId: string, quantity: number }[]) => {
+    setInventory(prevInventory => {
+      const newInventory = [...prevInventory];
+      receivedItems.forEach(receivedItem => {
+        const itemIndex = newInventory.findIndex(invItem => invItem.id === receivedItem.itemId);
+        if (itemIndex > -1) {
+          newInventory[itemIndex].quantity += receivedItem.quantity;
+        }
+      });
+      return newInventory;
+    });
+
+    setPurchaseOrders(prevPOs => {
+        const newPOs = [...prevPOs];
+        const poIndex = newPOs.findIndex(po => po.id === poId);
+        if (poIndex > -1) {
+            // Simplified logic: Assume full receipt completes the order.
+            // A more complex implementation would track received quantities against ordered quantities.
+            newPOs[poIndex].status = 'Completed';
+        }
+        return newPOs;
+    })
+  };
+
   return (
     <BookingContext.Provider value={{ 
         bookings, addBooking, updateBooking, deleteBooking, 
@@ -329,6 +432,8 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         transactions, addTransaction, settleTransaction,
         tasks, addTask, updateTaskStatus,
         guestProfiles,
+        vendors, addVendor, updateVendor,
+        inventory, purchaseOrders, addPurchaseOrder, updatePurchaseOrderStatus, receiveStock
     }}>
       {children}
     </BookingContext.Provider>
