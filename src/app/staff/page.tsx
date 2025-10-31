@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useContext } from "react";
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -13,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, SlidersHorizontal, Clock, ListTodo, CheckCircle, ArrowRight } from "lucide-react";
+import { PlusCircle, SlidersHorizontal, Clock, ListTodo, CheckCircle, ArrowRight, CalendarDays } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
 import { placeholderImages } from "@/lib/placeholder-images";
@@ -185,9 +186,11 @@ function StaffPage() {
             Staff & Role Management
           </h1>
           <div className="flex items-center gap-4">
-             <Button variant="outline">
-                <SlidersHorizontal className="mr-2" />
-                Filter Roles
+             <Button variant="outline" asChild>
+                <Link href="/staff/schedule">
+                    <CalendarDays className="mr-2" />
+                    Shift Scheduler
+                </Link>
             </Button>
             <Dialog open={isAddStaffDialogOpen} onOpenChange={setIsAddStaffDialogOpen}>
               <DialogTrigger asChild>

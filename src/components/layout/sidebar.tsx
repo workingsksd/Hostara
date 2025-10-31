@@ -7,6 +7,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboard,
@@ -20,9 +23,9 @@ import {
   LineChart,
   Plug,
   Shield,
-  UserCheck,
   HeartPulse,
   TrendingUp,
+  CalendarClock,
 } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -37,6 +40,7 @@ type NavLink = {
     label: string;
     roles: Role[];
     entities: OrganisationType[];
+    subItems?: NavLink[];
 };
 
 const navLinks: NavLink[] = [
@@ -45,7 +49,16 @@ const navLinks: NavLink[] = [
     { href: "/housekeeping", icon: BedDouble, label: "Housekeeping", roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge']},
     { href: "/restaurant", icon: UtensilsCrossed, label: "Restaurant & F&B", roles: ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'], entities: ['Hotel', 'Restaurant'] },
     { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
-    { href: "/staff", icon: UsersRound, label: "HR Management", roles: ['Admin', 'HR Manager', 'Maintenance Team'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { 
+        href: "/staff", 
+        icon: UsersRound, 
+        label: "HR Management", 
+        roles: ['Admin', 'HR Manager', 'Maintenance Team'], 
+        entities: ['Hotel', 'Lodge', 'Restaurant'],
+        subItems: [
+            { href: "/staff/schedule", icon: CalendarClock, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']}
+        ]
+    },
     { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge', 'Restaurant']},
     { href: "/revenue", icon: TrendingUp, label: "Revenue", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
     { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
@@ -62,7 +75,6 @@ export function AppSidebar() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Reading from localStorage should only happen on the client
     setUserRole(localStorage.getItem("userRole") as Role);
     setOrganisationType(localStorage.getItem("organisationType") as OrganisationType);
     setIsClient(true);
@@ -72,16 +84,10 @@ export function AppSidebar() {
     if (!userRole || !organisationType || !link.entities.includes(organisationType)) {
       return false;
     }
-
     if (organisationType === 'Lodge' && userRole !== 'Admin' && link.href === '/') {
         return false;
     }
-    
-    // Admin has access to everything within their organisation type
-    if (userRole === 'Admin') {
-        return true;
-    }
-
+    if (userRole === 'Admin') return true;
     return link.roles.includes(userRole);
   }
 
@@ -99,14 +105,35 @@ export function AppSidebar() {
         <SidebarMenu>
           {isClient && navLinks.map(link => {
             if (hasAccess(link)) {
+                const isSubActive = link.subItems?.some(sub => pathname === sub.href) ?? false;
                 return (
                     <SidebarMenuItem key={link.href}>
-                        <SidebarMenuButton asChild tooltip={link.label} isActive={pathname === link.href}>
-                        <Link href={link.href}>
-                            <link.icon />
-                            <span>{link.label}</span>
-                        </Link>
+                        <SidebarMenuButton 
+                          asChild={!link.subItems}
+                          tooltip={link.label} 
+                          isActive={pathname === link.href || isSubActive}
+                          >
+                          <Link href={link.href}>
+                              <link.icon />
+                              <span>{link.label}</span>
+                          </Link>
                         </SidebarMenuButton>
+                        {link.subItems && (
+                          <SidebarMenuSub>
+                              {link.subItems.map(subLink => {
+                                  if(hasAccess(subLink)) {
+                                      return (
+                                          <SidebarMenuSubItem key={subLink.href}>
+                                              <SidebarMenuSubButton asChild isActive={pathname === subLink.href}>
+                                                  <Link href={subLink.href}>{subLink.label}</Link>
+                                              </SidebarMenuSubButton>
+                                          </SidebarMenuSubItem>
+                                      );
+                                  }
+                                  return null;
+                              })}
+                          </SidebarMenuSub>
+                        )}
                     </SidebarMenuItem>
                 );
             }

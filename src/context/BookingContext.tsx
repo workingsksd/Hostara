@@ -2,6 +2,7 @@
 
 import { createContext, useState, ReactNode, FC, useEffect } from 'react';
 import { placeholderImages } from '@/lib/placeholder-images';
+import { addDays, format, startOfWeek } from 'date-fns';
 
 export type Booking = {
   id: string;
@@ -98,6 +99,28 @@ export type PurchaseOrder = {
     totalAmount: number;
 };
 
+export type Shift = {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+    color: string;
+};
+
+export type StaffMember = {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string | undefined;
+};
+
+export type ShiftAssignment = {
+    [staffId: string]: string | null; // value is shiftId or null for 'Off'
+};
+
+export type WeeklySchedule = {
+    [date: string]: ShiftAssignment; // Key is YYYY-MM-DD date string
+};
 
 const initialBookings: Booking[] = [
   {
@@ -200,6 +223,19 @@ const initialInventory: InventoryItem[] = [
     { id: 'item-4', name: 'Shampoo', quantity: 500, category: 'Toiletries', unit: 'pieces' },
 ];
 
+const initialStaffMembers: StaffMember[] = [
+  { id: 'staff-1', name: "Maria Garcia", role: "Head Housekeeper", avatar: placeholderImages.find((p) => p.id === "user-avatar-2")?.imageUrl },
+  { id: 'staff-2', name: "Liam Gallagher", role: "Maintenance Lead", avatar: placeholderImages.find((p) => p.id === "user-avatar-3")?.imageUrl },
+  { id: 'staff-3', name: "Chloe Nguyen", role: "Front Desk", avatar: placeholderImages.find((p) => p.id === "user-avatar-1")?.imageUrl },
+  { id: 'staff-4', name: "John Doe", role: "Chef", avatar: placeholderImages.find((p) => p.id === "user-avatar-4")?.imageUrl },
+];
+
+const initialShifts: Shift[] = [
+  { id: 'shift-morning', name: 'Morning', startTime: '07:00', endTime: '15:00', color: 'bg-sky-200 text-sky-800' },
+  { id: 'shift-evening', name: 'Evening', startTime: '15:00', endTime: '23:00', color: 'bg-amber-200 text-amber-800' },
+  { id: 'shift-night', name: 'Night', startTime: '23:00', endTime: '07:00', color: 'bg-indigo-200 text-indigo-800' },
+  { id: 'shift-off', name: 'Off', startTime: '', endTime: '', color: 'bg-gray-200 text-gray-800' },
+];
 
 interface BookingContextType {
   bookings: Booking[];
@@ -226,6 +262,10 @@ interface BookingContextType {
   addPurchaseOrder: (po: Omit<PurchaseOrder, 'id'>) => void;
   updatePurchaseOrderStatus: (poId: string, status: PurchaseOrder['status']) => void;
   receiveStock: (poId: string, receivedItems: { itemId: string, quantity: number }[]) => void;
+  staff: StaffMember[];
+  shifts: Shift[];
+  schedule: WeeklySchedule;
+  updateSchedule: (date: string, staffId: string, shiftId: string | null) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -253,6 +293,10 @@ export const BookingContext = createContext<BookingContextType>({
   addPurchaseOrder: () => {},
   updatePurchaseOrderStatus: () => {},
   receiveStock: () => {},
+  staff: [],
+  shifts: [],
+  schedule: {},
+  updateSchedule: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -265,6 +309,29 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>(initialStaffMembers);
+  const [shifts, setShifts] = useState<Shift[]>(initialShifts);
+  const [schedule, setSchedule] = useState<WeeklySchedule>({});
+
+  // Initialize a mock schedule
+  useEffect(() => {
+    const today = new Date();
+    const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    const newSchedule: WeeklySchedule = {};
+
+    for (let i = 0; i < 7; i++) {
+        const date = addDays(startOfThisWeek, i);
+        const dateString = format(date, 'yyyy-MM-dd');
+        newSchedule[dateString] = {
+            'staff-1': 'shift-morning',
+            'staff-2': 'shift-morning',
+            'staff-3': i < 5 ? 'shift-evening' : 'shift-off', // Weekends off for Chloe
+            'staff-4': 'shift-evening',
+        };
+    }
+    setSchedule(newSchedule);
+  }, []);
+
 
   useEffect(() => {
     const profiles: { [email: string]: GuestProfile } = {};
@@ -416,12 +483,21 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         const newPOs = [...prevPOs];
         const poIndex = newPOs.findIndex(po => po.id === poId);
         if (poIndex > -1) {
-            // Simplified logic: Assume full receipt completes the order.
-            // A more complex implementation would track received quantities against ordered quantities.
             newPOs[poIndex].status = 'Completed';
         }
         return newPOs;
     })
+  };
+
+  const updateSchedule = (date: string, staffId: string, shiftId: string | null) => {
+    setSchedule(prev => {
+        const newSchedule = { ...prev };
+        if (!newSchedule[date]) {
+            newSchedule[date] = {};
+        }
+        newSchedule[date][staffId] = shiftId;
+        return newSchedule;
+    });
   };
 
   return (
@@ -433,7 +509,8 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         tasks, addTask, updateTaskStatus,
         guestProfiles,
         vendors, addVendor, updateVendor,
-        inventory, purchaseOrders, addPurchaseOrder, updatePurchaseOrderStatus, receiveStock
+        inventory, purchaseOrders, addPurchaseOrder, updatePurchaseOrderStatus, receiveStock,
+        staff, shifts, schedule, updateSchedule,
     }}>
       {children}
     </BookingContext.Provider>
