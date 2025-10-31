@@ -128,10 +128,10 @@ const initialRooms: Room[] = [
   },
 ];
 
-const staffList: { name: StaffName, avatarId: string, id: string }[] = [
-    { name: 'Maria Garcia', avatarId: 'user-avatar-2', id: 'staff-1' },
-    { name: 'Liam Gallagher', avatarId: 'user-avatar-3', id: 'staff-2' },
-    { name: 'Chloe Nguyen', avatarId: 'user-avatar-1', id: 'staff-3' },
+const staffList: { name: StaffName, avatarId: string, id: string, role: string }[] = [
+    { name: 'Maria Garcia', avatarId: 'user-avatar-2', id: 'staff-1', role: 'Head Housekeeper' },
+    { name: 'Liam Gallagher', avatarId: 'user-avatar-3', id: 'staff-2', role: 'Maintenance Lead' },
+    { name: 'Chloe Nguyen', avatarId: 'user-avatar-1', id: 'staff-3', role: 'Housekeeper' },
 ];
 
 const cleaningChecklist = [
@@ -547,3 +547,5 @@ function HousekeepingPage() {
 }
 
 export default withAuth(HousekeepingPage);
+
+    
