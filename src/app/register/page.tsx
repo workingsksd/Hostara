@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import withAuth from "@/components/withAuth";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
@@ -16,6 +16,17 @@ import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 type EntityType = "Hotel" | "Lodge" | "Restaurant";
+type Role = 'manager' | 'receptionist' | 'housekeeping' | 'finance' | 'chef' | 'guest' | 'staff';
+
+const allRoles: { value: Role, label: string }[] = [
+    { value: 'manager', label: 'Manager (Admin)' },
+    { value: 'receptionist', label: 'Receptionist' },
+    { value: 'housekeeping', label: 'Housekeeping' },
+    { value: 'finance', label: 'Finance Officer' },
+    { value: 'chef', label: 'Chef' },
+    { value: 'guest', label: 'Guest' },
+    { value: 'staff', label: 'General Staff' },
+];
 
 function RegisterPage() {
   const router = useRouter();
@@ -28,6 +39,19 @@ function RegisterPage() {
   const [role, setRole] = useState("");
   const [entityType, setEntityType] = useState<EntityType>("Hotel");
   const [loading, setLoading] = useState(false);
+
+  const availableRoles = useMemo(() => {
+    switch (entityType) {
+        case 'Hotel':
+            return allRoles;
+        case 'Lodge':
+            return allRoles.filter(r => r.value !== 'chef');
+        case 'Restaurant':
+            return allRoles.filter(r => ['manager', 'chef', 'staff'].includes(r.value));
+        default:
+            return [];
+    }
+  }, [entityType]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +101,10 @@ function RegisterPage() {
                 <Button
                     key={type}
                     variant="ghost"
-                    onClick={() => setEntityType(type)}
+                    onClick={() => {
+                        setEntityType(type);
+                        setRole(''); // Reset role when entity type changes
+                    }}
                     className={cn(
                     "w-full transition-all duration-200",
                     entityType === type
@@ -117,13 +144,9 @@ function RegisterPage() {
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manager">Manager (Admin)</SelectItem>
-                    <SelectItem value="receptionist">Receptionist</SelectItem>
-                    <SelectItem value="housekeeping">Housekeeping</SelectItem>
-                    <SelectItem value="finance">Finance Officer</SelectItem>
-                    <SelectItem value="chef">Chef</SelectItem>
-                    <SelectItem value="guest">Guest</SelectItem>
-                    <SelectItem value="staff">General Staff</SelectItem>
+                    {availableRoles.map(r => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
             </div>
