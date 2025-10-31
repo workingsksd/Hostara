@@ -20,15 +20,20 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import { placeholderImages } from "@/lib/placeholder-images"
+import { useUser } from "@/firebase"
+import { getAuth, signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 
 export function AppHeader() {
-  const managerAvatar = placeholderImages.find(p => p.id === 'user-avatar-4');
+  const { user, app } = useUser();
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("authenticated");
+  const handleLogout = async () => {
+    if (!app) return;
+    const auth = getAuth(app);
+    await signOut(auth);
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("entityType");
     router.push("/login");
   };
 
@@ -47,13 +52,13 @@ export function AppHeader() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={managerAvatar?.imageUrl} alt="Manager Avatar" data-ai-hint={managerAvatar?.imageHint} />
-              <AvatarFallback>M</AvatarFallback>
+              <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
+              <AvatarFallback>{user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <User className="mr-2 h-4 w-4" />

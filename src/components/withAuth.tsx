@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 // Define page permissions based on roles
 const pagePermissions: { [key: string]: string[] } = {
@@ -20,45 +21,40 @@ const pagePermissions: { [key: string]: string[] } = {
     '/security': ['manager', 'staff'],
 };
 
-
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
   const AuthComponent = (props: P) => {
     const router = useRouter();
     const pathname = usePathname();
-    const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+    const { user, loading } = useUser();
 
     useEffect(() => {
-      const authenticated = localStorage.getItem('authenticated') === 'true';
-      const userRole = localStorage.getItem('userRole') as string | null;
+      if (loading) {
+        return; // Wait until user status is resolved
+      }
+
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
 
       if (isAuthPage) {
-        if (authenticated) {
+        if (user) {
           router.replace('/');
-          setAuthStatus('authenticated');
-        } else {
-          setAuthStatus('unauthenticated');
         }
       } else {
-        if (!authenticated) {
+        if (!user) {
           router.replace('/login');
-          setAuthStatus('unauthenticated');
         } else {
+          const userRole = localStorage.getItem('userRole') as string | null;
           // Check role-based permissions
           const allowedRoles = pagePermissions[pathname] || ['manager']; // Default to manager only for unknown routes
-          if (userRole && allowedRoles.includes(userRole)) {
-            setAuthStatus('authenticated');
-          } else {
+          if (!userRole || !allowedRoles.includes(userRole)) {
             // If user does not have permission, redirect to dashboard
             console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
             router.replace('/');
-            // Keep loading status to prevent rendering while redirecting
           }
         }
       }
-    }, [router, pathname]);
+    }, [router, pathname, user, loading]);
 
-    if (authStatus === 'loading') {
+    if (loading) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
           <p>Loading...</p>
@@ -67,15 +63,20 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     }
     
     const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-    if (isAuthPage && authStatus === 'unauthenticated') {
+    
+    if (isAuthPage && !user) {
         return <WrappedComponent {...props} />;
     }
 
-    if (!isAuthPage && authStatus === 'authenticated') {
-        return <WrappedComponent {...props} />;
+    if (!isAuthPage && user) {
+        const userRole = localStorage.getItem('userRole');
+        const allowedRoles = pagePermissions[pathname] || ['manager'];
+        if (userRole && allowedRoles.includes(userRole)) {
+          return <WrappedComponent {...props} />;
+        }
     }
 
-    return null; // Render nothing during redirects
+    return null; // Render nothing during loading or redirects
   };
 
   AuthComponent.displayName = `withAuth(${(WrappedComponent.displayName || WrappedComponent.name || 'Component')})`;
