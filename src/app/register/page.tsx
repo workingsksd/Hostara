@@ -15,18 +15,29 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
-type EntityType = "Hotel" | "Lodge" | "Restaurant";
-type Role = 'manager' | 'receptionist' | 'housekeeping' | 'finance' | 'chef' | 'guest' | 'staff';
+type OrganisationType = "Hotel" | "Lodge" | "Restaurant";
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Restaurant Staff' | 'Chef/Kitchen' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Chef' | 'Staff';
 
 const allRoles: { value: Role, label: string }[] = [
-    { value: 'manager', label: 'Manager (Admin)' },
-    { value: 'receptionist', label: 'Receptionist' },
-    { value: 'housekeeping', label: 'Housekeeping' },
-    { value: 'finance', label: 'Finance Officer' },
-    { value: 'chef', label: 'Chef' },
-    { value: 'guest', label: 'Guest' },
-    { value: 'staff', label: 'General Staff' },
+    { value: 'Admin', label: 'Admin (Full Access)' },
+    { value: 'Front Office Staff', label: 'Front Office Staff' },
+    { value: 'Housekeeping', label: 'Housekeeping' },
+    { value: 'Maintenance Team', label: 'Maintenance Team' },
+    { value: 'Restaurant Staff', label: 'Restaurant Staff' },
+    { value: 'Chef/Kitchen', label: 'Chef/Kitchen' },
+    { value: 'Inventory Manager', label: 'Inventory Manager' },
+    { value: 'HR Manager', label: 'HR Manager' },
+    { value: 'Finance Manager', label: 'Finance Manager' },
+    { value: 'Security Staff', label: 'Security Staff' },
+    { value: 'Guest', label: 'Guest' },
+    // Lodge specific roles can be mapped from these
+    { value: 'Receptionist', label: 'Receptionist' },
+    { value: 'Finance', label: 'Finance Officer' },
+    // Restaurant specific roles
+    { value: 'Chef', label: 'Chef' },
+    { value: 'Staff', label: 'General Staff' },
 ];
+
 
 function RegisterPage() {
   const router = useRouter();
@@ -37,21 +48,31 @@ function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState("");
-  const [entityType, setEntityType] = useState<EntityType>("Hotel");
+  const [organisationType, setOrganisationType] = useState<OrganisationType>("Hotel");
   const [loading, setLoading] = useState(false);
 
   const availableRoles = useMemo(() => {
-    switch (entityType) {
+    switch (organisationType) {
         case 'Hotel':
-            return allRoles;
+            return allRoles.filter(r => !['Receptionist', 'Finance', 'Chef', 'Staff'].includes(r.value));
         case 'Lodge':
-            return allRoles.filter(r => r.value !== 'chef');
+            return [
+                { value: 'Admin', label: 'Manager (Admin)' },
+                { value: 'Receptionist', label: 'Receptionist' },
+                { value: 'Housekeeping', label: 'Housekeeping' },
+                { value: 'Finance', label: 'Finance Officer' },
+                { value: 'Guest', label: 'Guest' },
+            ];
         case 'Restaurant':
-            return allRoles.filter(r => ['manager', 'chef', 'staff'].includes(r.value));
+            return [
+                { value: 'Admin', label: 'Manager (Admin)' },
+                { value: 'Chef', label: 'Chef' },
+                { value: 'Staff', label: 'General Staff' },
+            ];
         default:
             return [];
     }
-  }, [entityType]);
+  }, [organisationType]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,10 +94,10 @@ function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       
-      // In a real app, you'd likely save the role and entityType to Firestore
+      // In a real app, you'd likely save the role and organisationType to Firestore
       // For this example, we'll use localStorage
       localStorage.setItem("userRole", role);
-      localStorage.setItem("entityType", entityType);
+      localStorage.setItem("organisationType", organisationType);
       
       router.push("/");
     } catch (error: any) {
@@ -90,24 +111,24 @@ function RegisterPage() {
     }
   };
 
-  const entityTypes: EntityType[] = ["Hotel", "Lodge", "Restaurant"];
+  const organisationTypes: OrganisationType[] = ["Hotel", "Lodge", "Restaurant"];
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">
       <Card className="w-full max-w-md bg-card/60 backdrop-blur-lg border-border/20 shadow-2xl shadow-primary/10">
         <div className="p-6 pb-4">
             <div className="flex w-full rounded-md bg-muted/50 p-1">
-                {entityTypes.map((type) => (
+                {organisationTypes.map((type) => (
                 <Button
                     key={type}
                     variant="ghost"
                     onClick={() => {
-                        setEntityType(type);
+                        setOrganisationType(type);
                         setRole(''); // Reset role when entity type changes
                     }}
                     className={cn(
                     "w-full transition-all duration-200",
-                    entityType === type
+                    organisationType === type
                         ? "bg-background shadow-sm text-foreground"
                         : "bg-transparent text-muted-foreground hover:bg-background/50"
                     )}
@@ -120,7 +141,7 @@ function RegisterPage() {
         <form onSubmit={handleRegister}>
           <CardHeader className="text-center pt-0">
             <CardTitle className="text-2xl font-headline">
-              Register a new {entityType}
+              Register for {organisationType}
             </CardTitle>
             <CardDescription>Fill in the details below to create your account</CardDescription>
           </CardHeader>

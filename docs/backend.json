@@ -27,15 +27,78 @@
         "role": {
           "type": "string",
           "description": "The user's role in the system.",
-          "enum": ["manager", "staff", "chef", "guest"]
+          "enum": ["Admin", "Front Office Staff", "Housekeeping", "Maintenance Team", "Restaurant Staff", "Chef/Kitchen", "Inventory Manager", "HR Manager", "Finance Manager", "Security Staff", "Guest"]
         },
-        "entityType": {
+        "organisationType": {
           "type": "string",
-          "description": "The type of entity the user belongs to.",
+          "description": "The type of organisation the user belongs to.",
           "enum": ["Hotel", "Lodge", "Restaurant"]
         }
       },
-      "required": ["uid", "email", "role", "entityType"]
+      "required": ["uid", "email", "role", "organisationType"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Represents a guest booking.",
+      "type": "object",
+      "properties": {
+        "guestId": {"$ref": "#/entities/UserProfile"},
+        "checkIn": {"type": "string", "format": "date-time"},
+        "checkOut": {"type": "string", "format": "date-time"},
+        "status": {"type": "string", "enum": ["Pending", "Confirmed", "Checked-in", "Checked-out", "Cancelled"]},
+        "roomId": {"$ref": "#/entities/Room"},
+        "organisationType": {"type": "string"}
+      },
+      "required": ["guestId", "checkIn", "checkOut", "status", "organisationType"]
+    },
+    "Room": {
+        "title": "Room",
+        "description": "Represents a hotel room or lodge.",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "status": {"type": "string", "enum": ["Ready", "Dirty", "Cleaning in Progress", "Maintenance", "Occupied"]},
+            "organisationType": {"type": "string"}
+        },
+        "required": ["name", "status", "organisationType"]
+    },
+    "Task": {
+        "title": "Task",
+        "description": "A task assigned to a staff member.",
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
+            "assignedToId": {"$ref": "#/entities/UserProfile"},
+            "status": {"type": "string", "enum": ["Pending", "In Progress", "Completed"]},
+            "dueDate": {"type": "string", "format": "date"},
+            "organisationType": {"type": "string"}
+        },
+        "required": ["title", "assignedToId", "status", "organisationType"]
+    },
+     "InventoryItem": {
+        "title": "Inventory Item",
+        "description": "An item in the inventory.",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "quantity": {"type": "number"},
+            "category": {"type": "string", "enum": ["Food", "Linen", "Toiletries", "Maintenance"]},
+            "organisationType": {"type": "string"}
+        },
+        "required": ["name", "quantity", "category", "organisationType"]
+    },
+    "Transaction": {
+        "title": "Transaction",
+        "description": "A financial transaction.",
+        "type": "object",
+        "properties": {
+            "guestId": {"$ref": "#/entities/UserProfile"},
+            "amount": {"type": "number"},
+            "type": {"type": "string"},
+            "status": {"type": "string", "enum": ["Paid", "Pending"]},
+            "organisationType": {"type": "string"}
+        },
+        "required": ["guestId", "amount", "status", "organisationType"]
     }
   },
   "auth": {
@@ -43,10 +106,28 @@
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/UserProfile"
-      },
-      "description": "Stores public profile information for each user, keyed by their UID."
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores public profile information for each user."
+    },
+    "/bookings/{bookingId}": {
+        "schema": { "$ref": "#/entities/Booking" },
+        "description": "Stores all guest bookings."
+    },
+    "/rooms/{roomId}": {
+        "schema": { "$ref": "#/entities/Room" },
+        "description": "Stores information about all rooms."
+    },
+    "/tasks/{taskId}": {
+        "schema": { "$ref": "#/entities/Task" },
+        "description": "Stores tasks assigned to staff."
+    },
+    "/inventory/{itemId}": {
+        "schema": { "$ref": "#/entities/InventoryItem" },
+        "description": "Stores inventory items."
+    },
+    "/transactions/{transactionId}": {
+        "schema": { "$ref": "#/entities/Transaction" },
+        "description": "Stores financial transactions."
     }
   }
 }
