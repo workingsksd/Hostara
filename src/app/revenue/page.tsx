@@ -42,7 +42,7 @@ import {
 import { PlusCircle, Edit, Trash2, TrendingUp, Search, SlidersHorizontal, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { Slider } from "@/components/ui/slider";
 
 type RatePlan = {
@@ -52,13 +52,13 @@ type RatePlan = {
   description: string;
 };
 
-type PricingRule = {
-  id: string;
-  type: "occupancy";
-  ratePlanId: string;
-  threshold: number; // e.g., 80% occupancy
-  adjustment: number; // e.g., 15% increase
-};
+type PricingRuleType = 'occupancy' | 'los' | 'booking_window';
+
+type OccupancyRule = { id: string; type: "occupancy"; ratePlanId: string; threshold: number; adjustment: number; };
+type LosRule = { id: string; type: "los"; ratePlanId: string; minDays: number; adjustment: number; };
+type BookingWindowRule = { id: string; type: "booking_window"; ratePlanId: string; minDays: number; adjustment: number; };
+type PricingRule = OccupancyRule | LosRule | BookingWindowRule;
+
 
 const initialRatePlans: RatePlan[] = [
   { id: "rp1", name: "Standard Rate", basePrice: 8000, description: "Flexible, cancellable rate." },
@@ -69,6 +69,8 @@ const initialRatePlans: RatePlan[] = [
 const initialPricingRules: PricingRule[] = [
   { id: "rule1", type: "occupancy", ratePlanId: "rp1", threshold: 80, adjustment: 15 },
   { id: "rule2", type: "occupancy", ratePlanId: "rp2", threshold: 80, adjustment: 20 },
+  { id: "rule3", type: "los", ratePlanId: "rp1", minDays: 7, adjustment: -10 },
+  { id: "rule4", type: "booking_window", ratePlanId: "rp3", minDays: 30, adjustment: -15 },
 ];
 
 function RevenuePage() {
@@ -79,8 +81,10 @@ function RevenuePage() {
   const [editingPlan, setEditingPlan] = useState<RatePlan | null>(null);
   const { toast } = useToast();
 
-  const [simulatedDate, setSimulatedDate] = useState<Date | undefined>(new Date());
+  const [simulatedCheckIn, setSimulatedCheckIn] = useState<Date | undefined>(new Date());
+  const [simulatedCheckOut, setSimulatedCheckOut] = useState<Date | undefined>(new Date(new Date().setDate(new Date().getDate() + 2)));
   const [simulatedOccupancy, setSimulatedOccupancy] = useState(75);
+  const [ruleType, setRuleType] = useState<PricingRuleType>('occupancy');
 
   const handleSaveRatePlan = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -116,13 +120,26 @@ function RevenuePage() {
   const handleSaveRule = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newRule: PricingRule = {
-        id: `rule${Date.now()}`,
-        type: 'occupancy',
-        ratePlanId: formData.get('ratePlanId') as string,
-        threshold: parseFloat(formData.get('threshold') as string),
-        adjustment: parseFloat(formData.get('adjustment') as string),
+    let newRule: PricingRule;
+
+    const ratePlanId = formData.get('ratePlanId') as string;
+    const adjustment = parseFloat(formData.get('adjustment') as string);
+    const minDays = parseFloat(formData.get('minDays') as string);
+    const threshold = parseFloat(formData.get('threshold') as string);
+
+    switch (ruleType) {
+        case 'los':
+            newRule = { id: `rule${Date.now()}`, type: 'los', ratePlanId, minDays, adjustment };
+            break;
+        case 'booking_window':
+            newRule = { id: `rule${Date.now()}`, type: 'booking_window', ratePlanId, minDays, adjustment };
+            break;
+        case 'occupancy':
+        default:
+            newRule = { id: `rule${Date.now()}`, type: 'occupancy', ratePlanId, threshold, adjustment };
+            break;
     }
+    
     setPricingRules([...pricingRules, newRule]);
     toast({ title: "Pricing Rule Created" });
     setIsRuleDialogOpen(false);
@@ -130,14 +147,50 @@ function RevenuePage() {
   
   const calculateFinalPrice = (plan: RatePlan) => {
     let finalPrice = plan.basePrice;
-    const applicableRule = pricingRules.find(
-      (rule) => rule.ratePlanId === plan.id && simulatedOccupancy >= rule.threshold
-    );
-    if (applicableRule) {
-      finalPrice *= (1 + applicableRule.adjustment / 100);
+    
+    // Occupancy Rule
+    const occupancyRule = pricingRules.find(
+      (rule) => rule.type === 'occupancy' && rule.ratePlanId === plan.id && simulatedOccupancy >= rule.threshold
+    ) as OccupancyRule | undefined;
+    if (occupancyRule) {
+      finalPrice *= (1 + occupancyRule.adjustment / 100);
     }
+    
+    // Length of Stay Rule
+    if (simulatedCheckIn && simulatedCheckOut) {
+        const los = differenceInDays(simulatedCheckOut, simulatedCheckIn);
+        const losRule = pricingRules.find(
+            (rule) => rule.type === 'los' && rule.ratePlanId === plan.id && los >= rule.minDays
+        ) as LosRule | undefined;
+        if (losRule) {
+            finalPrice *= (1 + losRule.adjustment / 100);
+        }
+
+        // Booking Window Rule
+        const bookingWindow = differenceInDays(simulatedCheckIn, new Date());
+        const bookingWindowRule = pricingRules.find(
+             (rule) => rule.type === 'booking_window' && rule.ratePlanId === plan.id && bookingWindow >= rule.minDays
+        ) as BookingWindowRule | undefined;
+        if (bookingWindowRule) {
+             finalPrice *= (1 + bookingWindowRule.adjustment / 100);
+        }
+    }
+    
     return finalPrice;
   };
+
+  const getRuleDescription = (rule: PricingRule) => {
+    switch (rule.type) {
+        case 'occupancy':
+            return `If Occupancy >= ${rule.threshold}%`;
+        case 'los':
+            return `If stay is >= ${rule.minDays} days`;
+        case 'booking_window':
+            return `If booked >= ${rule.minDays} days in advance`;
+        default:
+            return 'Unknown Rule';
+    }
+  }
 
 
   return (
@@ -213,12 +266,25 @@ function RevenuePage() {
                             <form onSubmit={handleSaveRule}>
                                 <DialogHeader><DialogTitle>Create New Pricing Rule</DialogTitle></DialogHeader>
                                 <div className="grid gap-4 py-4">
+                                    <Select name="ruleType" defaultValue="occupancy" onValueChange={(v: PricingRuleType) => setRuleType(v)}>
+                                        <SelectTrigger><SelectValue placeholder="Select Rule Type" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="occupancy">Occupancy Based</SelectItem>
+                                            <SelectItem value="los">Length of Stay</SelectItem>
+                                            <SelectItem value="booking_window">Booking Window</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
                                     <Select name="ratePlanId" required>
                                         <SelectTrigger><SelectValue placeholder="Select Rate Plan" /></SelectTrigger>
                                         <SelectContent>{ratePlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
                                     </Select>
-                                    <Input name="threshold" type="number" placeholder="Occupancy Threshold (%)" required />
-                                    <Input name="adjustment" type="number" placeholder="Price Adjustment (%)" required />
+
+                                    {ruleType === 'occupancy' && <Input name="threshold" type="number" placeholder="Occupancy Threshold (%)" required />}
+                                    {ruleType === 'los' && <Input name="minDays" type="number" placeholder="Minimum Stay (Days)" required />}
+                                    {ruleType === 'booking_window' && <Input name="minDays" type="number" placeholder="Minimum Days in Advance" required />}
+                                    
+                                    <Input name="adjustment" type="number" placeholder="Price Adjustment (%) e.g. 15 or -10" required />
                                 </div>
                                 <DialogFooter>
                                     <Button variant="outline" type="button" onClick={() => setIsRuleDialogOpen(false)}>Cancel</Button>
@@ -242,8 +308,10 @@ function RevenuePage() {
                         {pricingRules.map(rule => (
                             <TableRow key={rule.id}>
                                 <TableCell>{ratePlans.find(p => p.id === rule.ratePlanId)?.name}</TableCell>
-                                <TableCell>If Occupancy >= {rule.threshold}%</TableCell>
-                                <TableCell className="text-green-500 font-medium">+{rule.adjustment}%</TableCell>
+                                <TableCell>{getRuleDescription(rule)}</TableCell>
+                                <TableCell className={rule.adjustment > 0 ? 'text-green-500 font-medium' : 'text-destructive font-medium'}>
+                                    {rule.adjustment > 0 ? '+' : ''}{rule.adjustment}%
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -259,9 +327,15 @@ function RevenuePage() {
               <CardDescription>Simulate final room prices based on current rules.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Simulation Date</Label>
-                <DatePicker name="simDate" initialDate={simulatedDate} />
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label>Check-in Date</Label>
+                   <DatePicker name="simCheckIn" initialDate={simulatedCheckIn} onSelect={setSimulatedCheckIn} />
+                 </div>
+                 <div className="space-y-2">
+                   <Label>Check-out Date</Label>
+                   <DatePicker name="simCheckOut" initialDate={simulatedCheckOut} onSelect={setSimulatedCheckOut} />
+                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Simulated Occupancy: {simulatedOccupancy}%</Label>
@@ -281,7 +355,7 @@ function RevenuePage() {
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Base: ₹{basePrice.toLocaleString()}
-                                {finalPrice !== basePrice && <span className="text-green-400 ml-2">(+{(finalPrice / basePrice * 100 - 100).toFixed(1)}%)</span>}
+                                {finalPrice !== basePrice && <span className={finalPrice > basePrice ? "text-green-400 ml-2" : "text-red-400 ml-2"}>({(finalPrice / basePrice * 100 - 100).toFixed(1)}%)</span>}
                             </p>
                         </div>
                     )
@@ -295,3 +369,5 @@ function RevenuePage() {
 }
 
 export default withAuth(RevenuePage);
+
+    

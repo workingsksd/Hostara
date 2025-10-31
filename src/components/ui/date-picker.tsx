@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
+import type { SelectSingleEventHandler } from "react-day-picker";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,20 +15,32 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-export function DatePicker({name, initialDate}: {name: string, initialDate?: Date}) {
+interface DatePickerProps {
+  name: string;
+  initialDate?: Date;
+  onSelect?: SelectSingleEventHandler;
+}
+
+export function DatePicker({ name, initialDate, onSelect }: DatePickerProps) {
   const [date, setDate] = useState<Date | undefined>(initialDate);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
-    // This effect ensures that when the dialog is re-opened with a different
-    // `initialDate`, the component's internal state updates.
     setDate(initialDate);
   }, [initialDate]);
 
+  const handleSelect: SelectSingleEventHandler = (day, selectedDay, activeModifiers, e) => {
+    setDate(selectedDay);
+    if (onSelect) {
+      onSelect(day, selectedDay, activeModifiers, e);
+    }
+    setPopoverOpen(false); // Close popover on date selection
+  }
 
   return (
     <>
-      <input type="hidden" name={name} value={date ? date.toISOString().split('T')[0] : ''} />
-      <Popover>
+      <input type="hidden" name={name} value={date ? format(date, 'yyyy-MM-dd') : ''} />
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
@@ -44,7 +57,7 @@ export function DatePicker({name, initialDate}: {name: string, initialDate?: Dat
           <Calendar
             mode="single"
             selected={date}
-            onSelect={setDate}
+            onSelect={handleSelect}
             initialFocus
           />
         </PopoverContent>
@@ -52,3 +65,5 @@ export function DatePicker({name, initialDate}: {name: string, initialDate?: Dat
     </>
   )
 }
+
+    
