@@ -1,16 +1,20 @@
+
 'use client';
 
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import withAuth from '@/components/withAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Mail, MessageSquare, Crown, Medal, Gem } from 'lucide-react';
+import { Mail, MessageSquare, Crown, Medal, Gem, Bot, Loader2, Wand2 } from 'lucide-react';
 import { BookingContext } from '@/context/BookingContext';
 import { format } from 'date-fns';
+import { analyzeGuestProfile } from '@/ai/flows/guest-preference-flow';
+import { type GuestProfileAnalysisOutput } from '@/ai/schemas/guest-preference-schema';
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 const loyaltyTiers = {
   Bronze: { icon: <Medal className="text-yellow-600" />, minSpend: 0, color: 'text-yellow-600' },
@@ -19,8 +23,18 @@ const loyaltyTiers = {
   Diamond: { icon: <Crown className="text-blue-400" />, minSpend: 150000, color: 'text-blue-400' },
 };
 
+type AnalysisState = {
+  [guestEmail: string]: {
+    loading: boolean;
+    data: GuestProfileAnalysisOutput | null;
+  };
+};
+
+
 function GuestLoyaltyPage() {
-  const { guestProfiles } = useContext(BookingContext);
+  const { guestProfiles, transactions } = useContext(BookingContext);
+  const [analysis, setAnalysis] = useState<AnalysisState>({});
+  const { toast } = useToast();
 
   const getLoyaltyTier = (totalSpend: number) => {
     if (totalSpend >= loyaltyTiers.Diamond.minSpend) return 'Diamond';
@@ -29,19 +43,51 @@ function GuestLoyaltyPage() {
     return 'Bronze';
   };
 
+  const handleAnalyzeProfile = async (guestEmail: string) => {
+    const guest = guestProfiles.find(p => p.email === guestEmail);
+    if (!guest) return;
+
+    setAnalysis(prev => ({ ...prev, [guestEmail]: { loading: true, data: null } }));
+
+    try {
+        const guestTransactions = transactions.filter(t => t.guest === guest.name);
+
+        const result = await analyzeGuestProfile({
+            guestName: guest.name,
+            stayHistory: JSON.stringify(guest.stayHistory),
+            transactionHistory: JSON.stringify(guestTransactions.map(t => ({ type: t.type, amount: t.amount, date: t.date }))),
+        });
+
+        setAnalysis(prev => ({ ...prev, [guestEmail]: { loading: false, data: result } }));
+        toast({
+            title: `Analysis Complete for ${guest.name}`,
+            description: "Guest preferences and next best offer have been generated.",
+        });
+    } catch (error) {
+        console.error("Analysis failed:", error);
+        setAnalysis(prev => ({ ...prev, [guestEmail]: { loading: false, data: null } }));
+        toast({
+            variant: "destructive",
+            title: "Analysis Failed",
+            description: "Could not generate AI insights for this guest.",
+        });
+    }
+  }
+
+
   return (
     <AppLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold font-headline">Guest Relationship Management (CRM)</h1>
-          <p className="text-muted-foreground">A unified dashboard of guest profiles, loyalty status, and preferences.</p>
+          <p className="text-muted-foreground">A unified dashboard of guest profiles, loyalty status, and AI-driven preferences.</p>
         </div>
 
         <Card className="bg-card/60 backdrop-blur-sm border-border/20">
           <CardHeader>
             <CardTitle>Guest Profiles & Loyalty</CardTitle>
             <CardDescription>
-              Explore guest data, visit history, and loyalty tiers.
+              Explore guest data, loyalty tiers, and generate AI-powered marketing insights.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -49,6 +95,7 @@ function GuestLoyaltyPage() {
               {guestProfiles.map(guest => {
                 const tierName = getLoyaltyTier(guest.totalSpend);
                 const tierInfo = loyaltyTiers[tierName as keyof typeof loyaltyTiers];
+                const guestAnalysis = analysis[guest.email];
 
                 return (
                   <Card key={guest.email} className="flex flex-col">
@@ -87,14 +134,44 @@ function GuestLoyaltyPage() {
                                 ))}
                             </div>
                         </div>
+
+                        {guestAnalysis?.data && (
+                             <div className="space-y-3 pt-3">
+                                <Separator />
+                                <h4 className="font-semibold text-sm flex items-center gap-2"><Bot className="text-accent" /> AI Insights</h4>
+                                <div className="p-3 rounded-md bg-muted/50 text-sm space-y-2">
+                                    <p><strong className="font-medium">Habits:</strong> {guestAnalysis.data.spendingHabits}</p>
+                                    <p><strong className="font-medium">Prediction:</strong> {guestAnalysis.data.predictedNextBooking}</p>
+                                    <div className="p-2 rounded-md bg-accent/10 border border-accent/20">
+                                        <p className="font-semibold text-accent">Next Best Offer:</p>
+                                        <p className="text-accent/90">{guestAnalysis.data.nextBestOffer}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                     </CardContent>
-                    <CardFooter className="flex gap-2">
-                        <Button variant="outline" className="w-full">
-                            <Mail className="mr-2"/> Email
+                    <CardFooter className="flex flex-col gap-2">
+                        <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => handleAnalyzeProfile(guest.email)}
+                            disabled={guestAnalysis?.loading}
+                        >
+                            {guestAnalysis?.loading ? (
+                                <><Loader2 className="mr-2 animate-spin" />Analyzing...</>
+                            ) : (
+                                <><Wand2 className="mr-2" /> {guestAnalysis?.data ? 'Re-Analyze Profile' : 'Analyze with AI'}</>
+                            )}
                         </Button>
-                        <Button variant="secondary" className="w-full">
-                            <MessageSquare className="mr-2"/> Send Offer
-                        </Button>
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <Button variant="outline" className="w-full">
+                                <Mail className="mr-2"/> Email
+                            </Button>
+                            <Button variant="secondary" className="w-full">
+                                <MessageSquare className="mr-2"/> Send Offer
+                            </Button>
+                        </div>
                     </CardFooter>
                   </Card>
                 )
