@@ -56,11 +56,7 @@ const navLinks: NavLink[] = [
         icon: UsersRound, 
         label: "HR Management", 
         roles: ['Admin', 'HR Manager', 'Maintenance Team'], 
-        entities: ['Hotel', 'Lodge', 'Restaurant'],
-        subItems: [
-            { href: "/staff/schedule", icon: CalendarClock, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
-            { href: "/staff/attendance", icon: Timer, label: "Attendance Log", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']}
-        ]
+        entities: ['Hotel', 'Lodge', 'Restaurant']
     },
     { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge', 'Restaurant']},
     { href: "/revenue", icon: TrendingUp, label: "Revenue", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
@@ -108,13 +104,14 @@ export function AppSidebar() {
         <SidebarMenu>
           {isClient && navLinks.map(link => {
             if (hasAccess(link)) {
-                const isSubActive = link.subItems?.some(sub => pathname === sub.href) ?? false;
+                const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
+                const isActive = pathname.startsWith(link.href) && link.href !== '/' || pathname === '/';
                 return (
                     <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton 
                           asChild={!link.subItems}
                           tooltip={link.label} 
-                          isActive={pathname === link.href || isSubActive}
+                          isActive={isActive || isSubActive}
                           >
                           <Link href={link.href}>
                               <link.icon />
@@ -127,7 +124,7 @@ export function AppSidebar() {
                                   if(hasAccess(subLink)) {
                                       return (
                                           <SidebarMenuSubItem key={subLink.href}>
-                                              <SidebarMenuSubButton asChild isActive={pathname === subLink.href}>
+                                              <SidebarMenuSubButton asChild isActive={pathname.startsWith(subLink.href)}>
                                                   <Link href={subLink.href}>{subLink.label}</Link>
                                               </SidebarMenuSubButton>
                                           </SidebarMenuSubItem>

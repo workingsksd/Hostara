@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, SlidersHorizontal, Clock, ListTodo, CheckCircle, ArrowRight, CalendarDays } from "lucide-react";
+import { PlusCircle, SlidersHorizontal, Clock, ListTodo, CheckCircle, ArrowRight, CalendarDays, Timer } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
 import { placeholderImages } from "@/lib/placeholder-images";
@@ -185,11 +185,17 @@ function StaffPage() {
           <h1 className="text-3xl font-bold font-headline">
             Staff & Role Management
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
              <Button variant="outline" asChild>
                 <Link href="/staff/schedule">
                     <CalendarDays className="mr-2" />
                     Shift Scheduler
+                </Link>
+            </Button>
+            <Button variant="outline" asChild>
+                <Link href="/staff/attendance">
+                    <Timer className="mr-2" />
+                    Attendance Log
                 </Link>
             </Button>
             <Dialog open={isAddStaffDialogOpen} onOpenChange={setIsAddStaffDialogOpen}>
