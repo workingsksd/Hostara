@@ -5,20 +5,33 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 
+type Role = 'manager' | 'staff' | 'chef' | 'guest' | 'finance' | 'housekeeping' | 'receptionist' | null;
+
 // Define page permissions based on roles
-const pagePermissions: { [key: string]: string[] } = {
-    '/': ['manager', 'staff', 'chef', 'guest'], // Everyone can see the dashboard
-    '/guests': ['manager', 'staff'],
-    '/guests/kyc': ['manager', 'staff'],
-    '/housekeeping': ['manager', 'staff'],
+const pagePermissions: { [key: string]: Role[] } = {
+    '/': ['manager'], // Only manager can see the main dashboard
+    '/guests': ['manager', 'receptionist', 'staff'],
+    '/guests/kyc': ['manager', 'receptionist', 'staff'],
+    '/housekeeping': ['manager', 'housekeeping', 'staff'],
     '/restaurant': ['manager', 'chef', 'staff'],
     '/restaurant/orders': ['manager', 'chef', 'staff'],
     '/inventory': ['manager', 'chef'],
     '/staff': ['manager'],
-    '/billing': ['manager'],
-    '/reporting': ['manager'],
+    '/billing': ['manager', 'finance'],
+    '/reporting': ['manager', 'finance'],
     '/integrations': ['manager'],
-    '/security': ['manager', 'staff'],
+    '/security': ['manager', 'receptionist', 'staff'],
+    '/guest-portal': ['guest'],
+};
+
+const defaultRoutes: { [key in Exclude<Role, null>]: string } = {
+    manager: '/',
+    staff: '/housekeeping', // Default for general staff
+    receptionist: '/guests',
+    housekeeping: '/housekeeping',
+    finance: '/billing',
+    chef: '/restaurant/orders',
+    guest: '/guest-portal',
 };
 
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
@@ -33,6 +46,8 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
       }
 
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+      const userRole = localStorage.getItem('userRole') as Role;
+      const entityType = localStorage.getItem('entityType');
 
       if (isAuthPage) {
         if (user) {
@@ -41,15 +56,20 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
       } else {
         if (!user) {
           router.replace('/login');
-        } else {
-          const userRole = localStorage.getItem('userRole') as string | null;
-          // Check role-based permissions
-          const allowedRoles = pagePermissions[pathname] || ['manager']; // Default to manager only for unknown routes
-          if (!userRole || !allowedRoles.includes(userRole)) {
-            // If user does not have permission, redirect to dashboard
+          return;
+        } 
+        
+        if (entityType === 'Lodge' && userRole && userRole !== 'manager' && pathname === '/') {
+            const defaultRoute = defaultRoutes[userRole] || '/';
+            router.replace(defaultRoute);
+            return;
+        }
+
+        const allowedRoles = pagePermissions[pathname] || ['manager']; // Default to manager only
+        if (!userRole || !allowedRoles.includes(userRole)) {
             console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
-            router.replace('/');
-          }
+            const defaultRoute = userRole ? defaultRoutes[userRole] : '/login';
+            router.replace(defaultRoute);
         }
       }
     }, [router, pathname, user, loading]);
@@ -63,20 +83,20 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     }
     
     const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-    
     if (isAuthPage && !user) {
         return <WrappedComponent {...props} />;
     }
 
     if (!isAuthPage && user) {
-        const userRole = localStorage.getItem('userRole');
+        const userRole = localStorage.getItem('userRole') as Role;
         const allowedRoles = pagePermissions[pathname] || ['manager'];
         if (userRole && allowedRoles.includes(userRole)) {
           return <WrappedComponent {...props} />;
         }
     }
 
-    return null; // Render nothing during loading or redirects
+    // Render nothing while redirecting or if access is not yet confirmed.
+    return null;
   };
 
   AuthComponent.displayName = `withAuth(${(WrappedComponent.displayName || WrappedComponent.name || 'Component')})`;

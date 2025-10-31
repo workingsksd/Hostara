@@ -117,10 +117,13 @@ function RegisterPage() {
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="manager">Manager (Admin)</SelectItem>
+                    <SelectItem value="receptionist">Receptionist</SelectItem>
+                    <SelectItem value="housekeeping">Housekeeping</SelectItem>
+                    <SelectItem value="finance">Finance Officer</SelectItem>
                     <SelectItem value="chef">Chef</SelectItem>
                     <SelectItem value="guest">Guest</SelectItem>
+                    <SelectItem value="staff">General Staff</SelectItem>
                   </SelectContent>
                 </Select>
             </div>
