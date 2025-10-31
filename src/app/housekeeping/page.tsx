@@ -35,9 +35,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, SlidersHorizontal, Trash2, Loader2, Sparkles, Wrench, AlertCircle, Eye, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { BookingContext, MaintenanceTask } from '@/context/BookingContext';
+import { BookingContext } from '@/context/BookingContext';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { format } from 'date-fns';
 
 type RoomStatus = 'Ready' | 'Dirty' | 'Cleaning in Progress' | 'Pending Approval' | 'Maintenance';
 type StaffName = 'Maria Garcia' | 'Liam Gallagher' | 'Chloe Nguyen' | 'Unassigned';
@@ -127,10 +128,10 @@ const initialRooms: Room[] = [
   },
 ];
 
-const staffList: { name: StaffName, avatarId: string }[] = [
-    { name: 'Maria Garcia', avatarId: 'user-avatar-2' },
-    { name: 'Liam Gallagher', avatarId: 'user-avatar-3' },
-    { name: 'Chloe Nguyen', avatarId: 'user-avatar-1' },
+const staffList: { name: StaffName, avatarId: string, id: string }[] = [
+    { name: 'Maria Garcia', avatarId: 'user-avatar-2', id: 'staff-1' },
+    { name: 'Liam Gallagher', avatarId: 'user-avatar-3', id: 'staff-2' },
+    { name: 'Chloe Nguyen', avatarId: 'user-avatar-1', id: 'staff-3' },
 ];
 
 const cleaningChecklist = [
@@ -185,7 +186,7 @@ function HousekeepingPage() {
   const [selectedStaff, setSelectedStaff] = useState<StaffName | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { addMaintenanceTask } = useContext(BookingContext);
+  const { addTask } = useContext(BookingContext);
 
   const handleAssignConfirm = () => {
     if (!selectedRoom || !selectedStaff) return;
@@ -282,13 +283,19 @@ function HousekeepingPage() {
 
     const formData = new FormData(e.currentTarget);
     const issue = formData.get('issue') as string;
+    
+    // Hardcoded to assign to the Maintenance Lead
+    const maintenanceLead = staffList.find(s => s.role === "Maintenance Lead");
+    if (!maintenanceLead) {
+        toast({ title: "No maintenance lead found!", variant: "destructive" });
+        return;
+    }
 
-    const newMaintenanceTask: MaintenanceTask = {
-      room: selectedRoom.name,
-      issue,
-      priority: 'High', // Defaulting to high for now
-    };
-    addMaintenanceTask(newMaintenanceTask);
+    addTask({
+      title: `Fix: ${issue} in ${selectedRoom.name}`,
+      assignedToId: maintenanceLead.id,
+      dueDate: format(new Date(), 'yyyy-MM-dd'),
+    });
 
     setRooms(prevRooms => prevRooms.map(room => {
       if (room.id === selectedRoom.id) {
@@ -299,7 +306,7 @@ function HousekeepingPage() {
 
     toast({
       title: 'Maintenance Requested',
-      description: `An alert for ${issue} in ${selectedRoom.name} has been created.`,
+      description: `A task for '${issue}' in ${selectedRoom.name} has been assigned to ${maintenanceLead.name}.`,
     });
 
     setActiveDialog(null);
@@ -463,7 +470,7 @@ function HousekeepingPage() {
           </DialogHeader>
           <div className="py-4">
               <RadioGroup onValueChange={(val: StaffName) => setSelectedStaff(val)}>
-                  {staffList.map(staff => (
+                  {staffList.filter(s => s.role !== 'Maintenance Lead').map(staff => (
                       <div key={staff.name} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
                           <RadioGroupItem value={staff.name} id={staff.name} />
                           <Avatar className="h-9 w-9">

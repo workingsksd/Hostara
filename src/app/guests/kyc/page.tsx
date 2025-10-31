@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/layout/app-layout';
@@ -288,5 +289,3 @@ function KYCScannerPage() {
 }
 
 export default withAuth(KYCScannerPage);
-
-    

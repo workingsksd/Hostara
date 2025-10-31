@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { BookingContext, Order } from '@/context/BookingContext';
 import { formatDistanceToNow } from 'date-fns';
 import { ArrowRight, CheckCircle, CookingPot, History } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const statusConfig: { [key in Order['status']]: { variant: 'default' | 'secondary' | 'destructive' | 'outline', icon: React.ReactNode, label: string } } = {
   'New': { variant: 'default', icon: <CookingPot />, label: 'New' },
@@ -32,11 +33,23 @@ const nextStatus: { [key in Order['status']]?: Order['status'] } = {
 
 function KitchenDisplayPage() {
   const { orders, updateOrderStatus } = useContext(BookingContext);
+  const { toast } = useToast();
 
-  const handleUpdateStatus = (orderId: string, currentStatus: Order['status']) => {
-    const next = nextStatus[currentStatus];
+  const handleUpdateStatus = (order: Order) => {
+    const next = nextStatus[order.status];
     if (next) {
-      updateOrderStatus(orderId, next);
+      updateOrderStatus(order.id, next);
+       toast({
+        title: 'Order Status Updated',
+        description: `Order #${order.id.slice(-6)} is now ${next}.`
+      });
+      if (next === 'Completed') {
+         toast({
+            title: 'Billing Alert',
+            description: `A new charge for ${order.guestName} has been added to the main folio.`,
+            className: 'bg-blue-500 text-white'
+        });
+      }
     }
   };
 
@@ -77,7 +90,7 @@ function KitchenDisplayPage() {
                         <span>₹{order.total}</span>
                     </div>
                     {nextStatus[order.status] && (
-                        <Button onClick={() => handleUpdateStatus(order.id, order.status)}>
+                        <Button onClick={() => handleUpdateStatus(order)}>
                             {nextStatus[order.status]} <ArrowRight className="ml-2"/>
                         </Button>
                     )}
