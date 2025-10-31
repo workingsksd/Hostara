@@ -1,14 +1,13 @@
 
+'use client';
+
 import Link from "next/link";
 import {
-  Sidebar,
   SidebarContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
-  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboard,
@@ -19,17 +18,49 @@ import {
   UsersRound,
   CreditCard,
   Building2,
-  ChevronDown,
   LineChart,
   Plug,
   Shield,
   Camera,
-  ChefHat
 } from "lucide-react"
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { AppSidebar as AppSidebarWrapper } from './sidebar-wrapper';
+
+type Role = 'manager' | 'staff' | 'chef' | 'guest' | null;
+type EntityType = 'Hotel' | 'Lodge' | 'Restaurant' | null;
+
+const navLinks = [
+    { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['manager', 'staff', 'chef', 'guest'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/guests", icon: Users, label: "Front Desk", roles: ['manager', 'staff'], entities: ['Hotel', 'Lodge'] },
+    { href: "/guests/kyc", icon: Camera, label: "KYC Scanner", roles: ['manager', 'staff'], entities: ['Hotel', 'Lodge'] },
+    { href: "/housekeeping", icon: BedDouble, label: "Housekeeping", roles: ['manager', 'staff'], entities: ['Hotel', 'Lodge'] },
+    { href: "/restaurant", icon: UtensilsCrossed, label: "Restaurant", roles: ['manager', 'chef', 'staff'], entities: ['Hotel', 'Restaurant'] },
+    { href: "/restaurant/orders", icon: UtensilsCrossed, label: "Kitchen", roles: ['manager', 'chef', 'staff'], entities: ['Hotel', 'Restaurant'] },
+    { href: "/inventory", icon: Warehouse, label: "Inventory", roles: ['manager', 'chef'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/staff", icon: UsersRound, label: "Staff", roles: ['manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/billing", icon: CreditCard, label: "Billing", roles: ['manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/reporting", icon: LineChart, label: "Reporting", roles: ['manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/integrations", icon: Plug, label: "Integrations", roles: ['manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/security", icon: Shield, label: "Security", roles: ['manager', 'staff'], entities: ['Hotel', 'Lodge'] },
+];
+
 
 export function AppSidebar() {
+  const pathname = usePathname();
+  const [userRole, setUserRole] = useState<Role>(null);
+  const [entityType, setEntityType] = useState<EntityType>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // Reading from localStorage should only happen on the client
+    setUserRole(localStorage.getItem("userRole") as Role);
+    setEntityType(localStorage.getItem("entityType") as EntityType);
+    setIsClient(true);
+  }, []);
+
   return (
-    <Sidebar variant="inset" collapsible="icon">
+    <AppSidebarWrapper>
       <SidebarHeader className="p-4">
         <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
             <Building2 className="size-7 text-accent" />
@@ -40,107 +71,26 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Dashboard">
-              <Link href="/">
-                <LayoutDashboard />
-                <span>Dashboard</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Front Desk">
-              <Link href="/guests">
-                <Users />
-                <span>Front Desk</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="KYC">
-              <Link href="/guests/kyc">
-                <Camera />
-                <span>KYC Scanner</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Housekeeping">
-              <Link href="/housekeeping">
-                <BedDouble />
-                <span>Housekeeping</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Restaurant">
-              <Link href="/restaurant">
-                <UtensilsCrossed />
-                <span>Restaurant</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Inventory">
-              <Link href="/inventory">
-                <Warehouse />
-                <span>Inventory</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Staff">
-              <Link href="/staff">
-                <UsersRound />
-                <span>Staff</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Billing">
-              <Link href="/billing">
-                <CreditCard />
-                <span>Billing</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Reporting">
-              <Link href="/reporting">
-                <LineChart />
-                <span>Reporting</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Integrations">
-              <Link href="/integrations">
-                <Plug />
-                <span>Integrations</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Security">
-              <Link href="/security">
-                <Shield />
-                <span>Security</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {isClient && navLinks.map(link => {
+            const hasRole = userRole && link.roles.includes(userRole);
+            const hasEntity = entityType && link.entities.includes(entityType);
+
+            if (userRole === 'manager' || (hasRole && hasEntity)) {
+                return (
+                    <SidebarMenuItem key={link.href}>
+                        <SidebarMenuButton asChild tooltip={link.label} isActive={pathname === link.href}>
+                        <Link href={link.href}>
+                            <link.icon />
+                            <span>{link.label}</span>
+                        </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                );
+            }
+            return null;
+          })}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarSeparator />
-      <SidebarFooter>
-        <div className="flex items-center gap-2 p-2">
-            <div className="size-10 rounded-full bg-muted-foreground/20 shrink-0 group-data-[collapsible=icon]:mx-auto" />
-            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                <span className="text-sm font-semibold">Admin User</span>
-                <span className="text-xs text-muted-foreground">admin@optiserve.com</span>
-            </div>
-            <ChevronDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
-        </div>
-      </SidebarFooter>
-    </Sidebar>
+    </AppSidebarWrapper>
   )
 }
