@@ -12,11 +12,11 @@ const pagePermissions: { [key: string]: Role[] } = {
     '/': ['Admin'], // Only admin can see the main dashboard
     '/guests': ['Admin', 'Front Office Staff', 'Receptionist'],
     '/guests/kyc': ['Admin', 'Front Office Staff', 'Receptionist'],
-    '/housekeeping': ['Admin', 'Housekeeping', 'Maintenance Team'],
+    '/housekeeping': ['Admin', 'Housekeeping'],
     '/restaurant': ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'],
     '/restaurant/orders': ['Admin', 'Chef/Kitchen', 'Chef'],
     '/inventory': ['Admin', 'Inventory Manager'],
-    '/staff': ['Admin', 'HR Manager'],
+    '/staff': ['Admin', 'HR Manager', 'Maintenance Team'],
     '/billing': ['Admin', 'Finance Manager', 'Finance'],
     '/revenue': ['Admin', 'Finance Manager'],
     '/reporting': ['Admin', 'Finance Manager', 'Finance'],
