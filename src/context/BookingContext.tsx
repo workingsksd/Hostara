@@ -204,8 +204,9 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     const profiles: { [email: string]: GuestProfile } = {};
+    const checkedOutBookings = bookings.filter(b => b.status === 'Checked-out');
 
-    // Process bookings
+    // First, process all bookings to build up stay history for everyone
     bookings.forEach(booking => {
       const { email, name, avatar } = booking.guest;
       if (!profiles[email]) {
@@ -226,21 +227,30 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
       });
     });
 
-    // Process transactions
+    // Then, process transactions to add spending data
     transactions.forEach(transaction => {
-      // Find guest email from bookings
       const booking = bookings.find(b => b.guest.name === transaction.guest);
       if (booking) {
         const { email } = booking.guest;
-        if (profiles[email]) {
-            if (transaction.status === 'Paid') {
-                profiles[email].totalSpend += transaction.amount;
-            }
+        if (profiles[email] && transaction.status === 'Paid') {
+          profiles[email].totalSpend += transaction.amount;
         }
       }
     });
 
-    setGuestProfiles(Object.values(profiles).sort((a, b) => b.totalSpend - a.totalSpend));
+    // Finally, filter down to only include profiles of loyal guests
+    const loyalGuestProfiles = Object.values(profiles).filter(profile => {
+        const checkedOutCount = profile.stayHistory.filter(stay => 
+            checkedOutBookings.some(b => 
+                b.guest.email === profile.email && 
+                b.checkIn === stay.checkIn && 
+                b.checkOut === stay.checkOut
+            )
+        ).length;
+        return checkedOutCount >= 2;
+    });
+
+    setGuestProfiles(loyalGuestProfiles.sort((a, b) => b.totalSpend - a.totalSpend));
   }, [bookings, transactions]);
 
 
