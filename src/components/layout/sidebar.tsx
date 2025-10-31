@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -26,6 +27,7 @@ import {
   HeartPulse,
   TrendingUp,
   CalendarClock,
+  Timer,
 } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -56,7 +58,8 @@ const navLinks: NavLink[] = [
         roles: ['Admin', 'HR Manager', 'Maintenance Team'], 
         entities: ['Hotel', 'Lodge', 'Restaurant'],
         subItems: [
-            { href: "/staff/schedule", icon: CalendarClock, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']}
+            { href: "/staff/schedule", icon: CalendarClock, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+            { href: "/staff/attendance", icon: Timer, label: "Attendance Log", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']}
         ]
     },
     { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge', 'Restaurant']},

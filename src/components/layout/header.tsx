@@ -6,6 +6,7 @@ import {
   User,
   Settings,
   LogOut,
+  Clock,
 } from "lucide-react"
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -23,10 +24,45 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useUser } from "@/firebase"
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
+import { useContext, useEffect, useState } from "react"
+import { BookingContext } from "@/context/BookingContext"
+import { useToast } from "@/hooks/use-toast"
 
 export function AppHeader() {
   const { user, auth } = useUser();
+  const { clockIn, clockOut, attendanceLog } = useContext(BookingContext);
+  const { toast } = useToast();
   const router = useRouter();
+
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState('00:00:00');
+
+  const currentUserAttendance = user ? attendanceLog.find(a => a.staffId === user.uid && !a.clockOutTime) : null;
+
+  useEffect(() => {
+    if (currentUserAttendance) {
+      setSessionStartTime(new Date(currentUserAttendance.clockInTime).getTime());
+    } else {
+      setSessionStartTime(null);
+    }
+  }, [currentUserAttendance]);
+
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (sessionStartTime) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const diff = now - sessionStartTime;
+        const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+        const minutes = Math.floor((diff / (1000 * 60)) % 60).toString().padStart(2, '0');
+        const seconds = Math.floor((diff / 1000) % 60).toString().padStart(2, '0');
+        setElapsedTime(`${hours}:${minutes}:${seconds}`);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
+
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -35,6 +71,24 @@ export function AppHeader() {
     localStorage.removeItem("entityType");
     router.push("/login");
   };
+
+  const handleClockIn = () => {
+    if (!user) return;
+    clockIn(user.uid);
+    toast({
+        title: 'Clocked In',
+        description: 'Your shift has started.'
+    });
+  }
+
+  const handleClockOut = () => {
+    if (!user || !currentUserAttendance) return;
+    clockOut(currentUserAttendance.id);
+    toast({
+        title: 'Clocked Out',
+        description: `Your shift has ended. Total time: ${elapsedTime}`,
+    });
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-primary via-primary to-accent/80 px-4 md:px-6">
@@ -47,6 +101,23 @@ export function AppHeader() {
           className="w-full rounded-lg bg-background/80 pl-8 md:w-[200px] lg:w-[320px] backdrop-blur-sm"
         />
       </div>
+
+       {user && (
+         <div className="flex items-center gap-2">
+            {currentUserAttendance ? (
+                <Button onClick={handleClockOut} variant="destructive" size="sm">
+                    <Clock className="mr-2" />
+                    <span className="font-mono text-sm">{elapsedTime}</span>
+                </Button>
+            ) : (
+                <Button onClick={handleClockIn} variant="secondary" size="sm">
+                    <Clock className="mr-2" /> Clock In
+                </Button>
+            )}
+         </div>
+       )}
+
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">

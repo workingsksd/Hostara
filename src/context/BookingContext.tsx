@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useState, ReactNode, FC, useEffect } from 'react';
@@ -122,119 +123,98 @@ export type WeeklySchedule = {
     [date: string]: ShiftAssignment; // Key is YYYY-MM-DD date string
 };
 
+export type AttendanceRecord = {
+    id: string;
+    staffId: string;
+    clockInTime: string;
+    clockOutTime: string | null;
+};
+
 const initialBookings: Booking[] = [
   {
     id: 'booking-1',
-    guest: {
-      name: 'Eleanor Vance',
-      email: 'eleanor@example.com',
-      avatar: placeholderImages.find(p => p.id === 'user-avatar-2')?.imageUrl,
-    },
-    status: 'Checked-in',
-    checkIn: '2024-08-15',
-    checkOut: '2024-08-20',
-    type: 'Hotel',
-    room: 'Deluxe Suite 301',
-  },
-  {
-    id: 'booking-2',
-    guest: {
-      name: 'Marcus Thorne',
-      email: 'marcus@example.com',
-      avatar: placeholderImages.find(p => p.id === 'user-avatar-1')?.imageUrl,
-    },
+    guest: { name: 'John Doe', email: 'john.doe@example.com', avatar: placeholderImages.find(p => p.id === 'user-avatar-1')?.imageUrl },
     status: 'Checked-in',
     checkIn: '2024-08-18',
     checkOut: '2024-08-22',
+    type: 'Hotel',
+    room: 'Room 101',
+  },
+  {
+    id: 'booking-2',
+    guest: { name: 'Jane Smith', email: 'jane.smith@example.com', avatar: placeholderImages.find(p => p.id === 'user-avatar-2')?.imageUrl },
+    status: 'Confirmed',
+    checkIn: '2024-08-20',
+    checkOut: '2024-08-25',
     type: 'Lodge',
-    room: 'Lakeside Cabin 5',
+    room: 'Lodge 5A',
   },
   {
     id: 'booking-3',
-    guest: {
-      name: 'Liam Gallagher',
-      email: 'liam@example.com',
-      avatar: placeholderImages.find(p => p.id === 'user-avatar-3')?.imageUrl,
-    },
-    status: 'Pending',
-    checkIn: '2024-09-01',
-    checkOut: '2024-09-05',
-    type: 'Hotel',
-    room: 'Standard Room 102',
-  },
-  {
-    id: 'booking-4',
-    guest: {
-      name: 'Sophia Loren',
-      email: 'sophia@example.com',
-      avatar: '',
-    },
+    guest: { name: 'Eleanor Vance', email: 'eleanor@example.com', avatar: placeholderImages.find(p => p.id === 'user-avatar-4')?.imageUrl },
     status: 'Checked-out',
-    checkIn: '2024-08-10',
-    checkOut: '2024-08-14',
-    type: 'Restaurant',
-    room: 'Table 7',
+    checkIn: '2024-07-10',
+    checkOut: '2024-07-15',
+    type: 'Hotel',
+    room: 'Room 301',
   },
     {
-    id: 'booking-5',
-    guest: {
-      name: 'Eleanor Vance',
-      email: 'eleanor@example.com',
-      avatar: placeholderImages.find(p => p.id === 'user-avatar-2')?.imageUrl,
-    },
+    id: 'booking-4',
+    guest: { name: 'Eleanor Vance', email: 'eleanor@example.com', avatar: placeholderImages.find(p => p.id === 'user-avatar-4')?.imageUrl },
     status: 'Checked-out',
-    checkIn: '2024-07-01',
-    checkOut: '2024-07-05',
+    checkIn: '2024-06-01',
+    checkOut: '2024-06-05',
     type: 'Hotel',
-    room: 'Sea View 402',
+    room: 'Room 202',
   },
 ];
 
 const initialMaintenanceTasks: MaintenanceTask[] = [
-  { room: "Room 204", issue: "Leaky Faucet", priority: "High" },
-  { room: "Lodge 3B", issue: "AC Not Cooling", priority: "High" },
-  { room: "Restaurant", issue: "Freezer Malfunction", priority: "Critical" },
+    { room: 'Room 205', issue: 'Leaky Faucet', priority: 'High' },
+    { room: 'Lobby', issue: 'AC not cooling', priority: 'Critical' },
+    { room: 'Pool Area', issue: 'Loose tile', priority: 'Medium' },
 ];
 
 const initialTransactions: Transaction[] = [
-    { id: 'txn-001', guest: 'Eleanor Vance', date: new Date().toISOString(), type: 'Room', amount: 12500, status: 'Paid'},
-    { id: 'txn-002', guest: 'Marcus Thorne', date: new Date().toISOString(), type: 'Restaurant', amount: 3200, status: 'Paid'},
-    { id: 'txn-003', guest: 'John Doe', date: new Date().toISOString(), type: 'Room Service', amount: 1500, status: 'Pending'},
-    { id: 'txn-004', guest: 'Sophia Loren', date: '2024-08-17', type: 'Lodge', amount: 9800, status: 'Paid'},
-    { id: 'txn-005', guest: 'Eleanor Vance', date: '2024-07-04', type: 'Room', amount: 22000, status: 'Paid'},
+    { id: 'txn-1', guest: 'John Doe', date: '2024-08-19', type: 'Room', amount: 8000, status: 'Paid' },
+    { id: 'txn-2', guest: 'John Doe', date: '2024-08-19', type: 'Restaurant', amount: 2500, status: 'Pending' },
+    { id: 'txn-3', guest: 'Jane Smith', date: '2024-08-20', type: 'Lodge', amount: 12000, status: 'Paid' },
+    { id: 'txn-4', guest: 'Eleanor Vance', date: '2024-07-14', type: 'Room Service', amount: 1500, status: 'Paid' },
+    { id: 'txn-5', guest: 'Eleanor Vance', date: '2024-07-14', type: 'Room', amount: 24000, status: 'Paid' },
 ];
 
 const initialTasks: StaffTask[] = [
-    { id: 'task-1', title: 'Deep clean Suite 301', assignedToId: 'staff-1', status: 'In Progress', dueDate: '2024-08-21' },
-    { id: 'task-2', title: 'Fix AC in Lodge 3B', assignedToId: 'staff-2', status: 'Pending', dueDate: '2024-08-21' },
-    { id: 'task-3', title: 'Restock minibar for Room 101', assignedToId: 'staff-1', status: 'Pending', dueDate: '2024-08-20'},
+    { id: 'task-1', title: 'Deep clean Suite 4B', assignedToId: 'staff-1', status: 'Pending', dueDate: '2024-08-21' },
+    { id: 'task-2', title: 'Fix lobby AC unit', assignedToId: 'staff-2', status: 'In Progress', dueDate: '2024-08-20' },
 ];
 
 const initialVendors: Vendor[] = [
-    { id: 'vendor-1', name: 'Fresh Veggies Co.', contactPerson: 'Rajesh Kumar', phone: '9876543210', category: 'Food' },
-    { id: 'vendor-2', name: 'Hotel Supplies Inc.', contactPerson: 'Priya Sharma', phone: '8765432109', category: 'Linen' },
-    { id: 'vendor-3', name: 'HygienePro', contactPerson: 'Amit Patel', phone: '7654321098', category: 'Toiletries' },
+    { id: 'vendor-1', name: 'Fresh Veggies Co.', contactPerson: 'Mr. Sharma', phone: '9876543210', category: 'Food' },
+    { id: 'vendor-2', name: 'Deluxe Linens', contactPerson: 'Ms. Gupta', phone: '9876543211', category: 'Linen' },
+    { id: 'vendor-3', name: 'All-in-One Maintenance', contactPerson: 'Mr. Singh', phone: '9876543212', category: 'Maintenance' },
 ];
 
 const initialInventory: InventoryItem[] = [
-    { id: 'item-1', name: 'Tomatoes', quantity: 50, category: 'Food', unit: 'kg' },
-    { id: 'item-2', name: 'Onions', quantity: 100, category: 'Food', unit: 'kg' },
-    { id: 'item-3', name: 'Bath Towels', quantity: 200, category: 'Linen', unit: 'pieces' },
-    { id: 'item-4', name: 'Shampoo', quantity: 500, category: 'Toiletries', unit: 'pieces' },
+    { id: 'inv-1', name: 'Tomatoes', quantity: 50, category: 'Food', unit: 'kg' },
+    { id: 'inv-2', name: 'Onions', quantity: 100, category: 'Food', unit: 'kg' },
+    { id: 'inv-3', name: 'Bath Towels', quantity: 200, category: 'Linen', unit: 'pieces' },
+    { id: 'inv-4', name: 'Soap Bars', quantity: 500, category: 'Toiletries', unit: 'pieces' },
+    { id: 'inv-5', name: 'LED Bulbs', quantity: 50, category: 'Maintenance', unit: 'pieces' },
 ];
 
 const initialStaffMembers: StaffMember[] = [
-  { id: 'staff-1', name: "Maria Garcia", role: "Head Housekeeper", avatar: placeholderImages.find((p) => p.id === "user-avatar-2")?.imageUrl },
-  { id: 'staff-2', name: "Liam Gallagher", role: "Maintenance Lead", avatar: placeholderImages.find((p) => p.id === "user-avatar-3")?.imageUrl },
-  { id: 'staff-3', name: "Chloe Nguyen", role: "Front Desk", avatar: placeholderImages.find((p) => p.id === "user-avatar-1")?.imageUrl },
-  { id: 'staff-4', name: "John Doe", role: "Chef", avatar: placeholderImages.find((p) => p.id === "user-avatar-4")?.imageUrl },
+    { id: 'user1', name: 'Admin User', role: 'Admin', avatar: placeholderImages.find(p => p.id === "user-avatar-4")?.imageUrl },
+    { id: 'staff-1', name: 'Maria Garcia', role: 'Head Housekeeper', avatar: placeholderImages.find(p => p.id === "user-avatar-2")?.imageUrl },
+    { id: 'staff-2', name: 'Liam Gallagher', role: 'Maintenance Lead', avatar: placeholderImages.find(p => p.id === "user-avatar-3")?.imageUrl },
+    { id: 'staff-3', name: 'Chloe Nguyen', role: 'Front Desk', avatar: placeholderImages.find(p => p.id === "user-avatar-1")?.imageUrl },
+    { id: 'staff-4', name: 'John Doe', role: 'Chef', avatar: placeholderImages.find(p => p.id === "user-avatar-1")?.imageUrl },
 ];
 
 const initialShifts: Shift[] = [
-  { id: 'shift-morning', name: 'Morning', startTime: '07:00', endTime: '15:00', color: 'bg-sky-200 text-sky-800' },
-  { id: 'shift-evening', name: 'Evening', startTime: '15:00', endTime: '23:00', color: 'bg-amber-200 text-amber-800' },
-  { id: 'shift-night', name: 'Night', startTime: '23:00', endTime: '07:00', color: 'bg-indigo-200 text-indigo-800' },
-  { id: 'shift-off', name: 'Off', startTime: '', endTime: '', color: 'bg-gray-200 text-gray-800' },
+    { id: 'shift-morning', name: 'Morning', startTime: '07:00', endTime: '15:00', color: 'bg-blue-200/50 text-blue-800' },
+    { id: 'shift-evening', name: 'Evening', startTime: '15:00', endTime: '23:00', color: 'bg-yellow-200/50 text-yellow-800' },
+    { id: 'shift-night', name: 'Night', startTime: '23:00', endTime: '07:00', color: 'bg-indigo-200/50 text-indigo-800' },
+    { id: 'shift-off', name: 'Off', startTime: '', endTime: '', color: 'bg-gray-200/50 text-gray-800' },
 ];
 
 interface BookingContextType {
@@ -266,6 +246,9 @@ interface BookingContextType {
   shifts: Shift[];
   schedule: WeeklySchedule;
   updateSchedule: (date: string, staffId: string, shiftId: string | null) => void;
+  attendanceLog: AttendanceRecord[];
+  clockIn: (staffId: string) => void;
+  clockOut: (attendanceId: string) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -297,6 +280,9 @@ export const BookingContext = createContext<BookingContextType>({
   shifts: [],
   schedule: {},
   updateSchedule: () => {},
+  attendanceLog: [],
+  clockIn: () => {},
+  clockOut: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -312,6 +298,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [staff, setStaff] = useState<StaffMember[]>(initialStaffMembers);
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [schedule, setSchedule] = useState<WeeklySchedule>({});
+  const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>([]);
 
   // Initialize a mock schedule
   useEffect(() => {
@@ -500,6 +487,27 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     });
   };
 
+  const clockIn = (staffId: string) => {
+    const existingRecord = attendanceLog.find(r => r.staffId === staffId && !r.clockOutTime);
+    if (existingRecord) return; // Already clocked in
+
+    const newRecord: AttendanceRecord = {
+      id: `att-${Date.now()}`,
+      staffId,
+      clockInTime: new Date().toISOString(),
+      clockOutTime: null,
+    };
+    setAttendanceLog(prev => [newRecord, ...prev]);
+  };
+
+  const clockOut = (attendanceId: string) => {
+    setAttendanceLog(prev =>
+      prev.map(r =>
+        r.id === attendanceId ? { ...r, clockOutTime: new Date().toISOString() } : r
+      )
+    );
+  };
+
   return (
     <BookingContext.Provider value={{ 
         bookings, addBooking, updateBooking, deleteBooking, 
@@ -511,6 +519,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         vendors, addVendor, updateVendor,
         inventory, purchaseOrders, addPurchaseOrder, updatePurchaseOrderStatus, receiveStock,
         staff, shifts, schedule, updateSchedule,
+        attendanceLog, clockIn, clockOut
     }}>
       {children}
     </BookingContext.Provider>
