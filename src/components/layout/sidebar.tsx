@@ -80,14 +80,6 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Kitchen Orders">
-              <Link href="/restaurant/orders">
-                <ChefHat />
-                <span>Kitchen</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Inventory">
               <Link href="/inventory">
