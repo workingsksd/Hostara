@@ -284,5 +284,3 @@ function StatCard({ title, value, icon, variant }: { title: string, value: strin
 
 
 export default withAuth(BillingPage);
-
-    
