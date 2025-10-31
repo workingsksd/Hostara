@@ -258,7 +258,7 @@ function StaffPage() {
                                 memberTasks.map(task => (
                                     <div key={task.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                                         <div>
-                                            <p className="text-sm">{task.title}</p>
+                                            <div className="text-sm">{task.title}</div>
                                             <div className="text-xs text-muted-foreground">
                                                 Due: {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })} | Status: <Badge variant={taskStatusVariant[task.status]} className="px-1.5 py-0">{task.status}</Badge>
                                             </div>
@@ -332,3 +332,5 @@ function StaffPage() {
 }
 
 export default withAuth(StaffPage);
+
+    
