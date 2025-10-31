@@ -49,7 +49,7 @@ function KitchenDisplayPage() {
             {statusConfig[status].label}
             <Badge variant="secondary" className="rounded-full">{filteredOrders.length}</Badge>
         </h2>
-        <div className="space-y-4 h-[75vh] overflow-y-auto rounded-lg p-1">
+        <div className="space-y-4 h-[75vh] overflow-y-auto rounded-lg p-1 no-scrollbar">
             {filteredOrders.length > 0 ? filteredOrders.map(order => (
             <Card key={order.id} className="bg-card/80 backdrop-blur-sm">
                 <CardHeader>

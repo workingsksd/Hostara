@@ -41,17 +41,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useContext } from 'react';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { Booking, BookingContext } from '@/context/BookingContext';
 
 
-const statusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+const statusVariant: { [key in Booking['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
   'Checked-in': 'default',
   'Confirmed': 'secondary',
   'Pending': 'outline',
@@ -68,18 +65,32 @@ function GuestsPage() {
   const handleAddBooking = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const newBookingData = {
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        checkIn: formData.get('checkin') as string,
+        checkOut: formData.get('checkout') as string,
+        status: formData.get('status') as Booking['status'],
+    }
+
+    if (!newBookingData.checkIn || !newBookingData.checkOut) {
+        // Simple validation, can be improved with form libraries
+        alert('Please select check-in and check-out dates.');
+        return;
+    }
+
     const newBooking: Booking = {
       id: `booking-${Date.now()}`,
       guest: {
-        name: formData.get('name') as string,
-        email: formData.get('email') as string,
+        name: newBookingData.name,
+        email: newBookingData.email,
         avatar: '',
       },
-      checkIn: format(new Date(formData.get('checkin') as string), 'yyyy-MM-dd'),
-      checkOut: format(new Date(formData.get('checkout') as string), 'yyyy-MM-dd'),
-      status: formData.get('status') as Booking['status'],
-      type: 'Hotel',
-      room: 'New Room',
+      checkIn: newBookingData.checkIn,
+      checkOut: newBookingData.checkOut,
+      status: newBookingData.status,
+      type: 'Hotel', // Assuming Hotel for now
+      room: 'Not Assigned',
     };
     addBooking(newBooking);
     setIsAddDialogOpen(false);
@@ -89,16 +100,30 @@ function GuestsPage() {
     e.preventDefault();
     if (!selectedBooking) return;
     const formData = new FormData(e.currentTarget);
+
+    const updatedData = {
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        checkIn: formData.get('checkin') as string,
+        checkOut: formData.get('checkout') as string,
+        status: formData.get('status') as Booking['status'],
+    }
+    
+    if (!updatedData.checkIn || !updatedData.checkOut) {
+        alert('Please select check-in and check-out dates.');
+        return;
+    }
+
     const updated: Booking = {
       ...selectedBooking,
       guest: {
         ...selectedBooking.guest,
-        name: formData.get('name') as string,
-        email: formData.get('email') as string,
+        name: updatedData.name,
+        email: updatedData.email,
       },
-      checkIn: format(new Date(formData.get('checkin') as string), 'yyyy-MM-dd'),
-      checkOut: format(new Date(formData.get('checkout') as string), 'yyyy-MM-dd'),
-      status: formData.get('status') as Booking['status'],
+      checkIn: updatedData.checkIn,
+      checkOut: updatedData.checkOut,
+      status: updatedData.status,
     };
     updateBooking(updated);
     setIsEditDialogOpen(false);
@@ -146,36 +171,28 @@ function GuestsPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name-add" className="text-right">
-                      Name
-                    </Label>
-                    <Input id="name-add" name="name" className="col-span-3" required />
+                  <div className="space-y-2">
+                    <Label htmlFor="name-add">Name</Label>
+                    <Input id="name-add" name="name" required />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email-add" className="text-right">
-                      Email
-                    </Label>
-                    <Input id="email-add" name="email" type="email" className="col-span-3" required />
+                   <div className="space-y-2">
+                    <Label htmlFor="email-add">Email</Label>
+                    <Input id="email-add" name="email" type="email" required />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="checkin-add" className="text-right">
-                      Check-in
-                    </Label>
-                    <DatePicker name="checkin" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="checkin-add">Check-in</Label>
+                        <DatePicker name="checkin" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="checkout-add">Check-out</Label>
+                        <DatePicker name="checkout"/>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="checkout-add" className="text-right">
-                      Check-out
-                    </Label>
-                    <DatePicker name="checkout"/>
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="status-add" className="text-right">
-                      Status
-                    </Label>
+                   <div className="space-y-2">
+                    <Label htmlFor="status-add">Status</Label>
                     <Select name="status" defaultValue="Pending">
-                      <SelectTrigger id="status-add" className="col-span-3">
+                      <SelectTrigger id="status-add">
                         <SelectValue placeholder="Select a status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -188,7 +205,8 @@ function GuestsPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">Save Booking</Button>
+                    <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                    <Button type="submit">Save Booking</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -243,7 +261,7 @@ function GuestsPage() {
                     <Badge variant={statusVariant[booking.status] || 'default'}>{booking.status}</Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {new Date(booking.checkIn).toLocaleDateString()} - {new Date(booking.checkOut).toLocaleDateString()}
+                    {format(new Date(booking.checkIn), "PP")} - {format(new Date(booking.checkOut), "PP")}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -328,36 +346,28 @@ function GuestsPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name-edit" className="text-right">
-                      Name
-                    </Label>
-                    <Input id="name-edit" name="name" className="col-span-3" defaultValue={selectedBooking?.guest.name} required />
+                  <div className="space-y-2">
+                    <Label htmlFor="name-edit">Name</Label>
+                    <Input id="name-edit" name="name" defaultValue={selectedBooking?.guest.name} required />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email-edit" className="text-right">
-                      Email
-                    </Label>
-                    <Input id="email-edit" name="email" type="email" className="col-span-3" defaultValue={selectedBooking?.guest.email} required />
+                  <div className="space-y-2">
+                    <Label htmlFor="email-edit">Email</Label>
+                    <Input id="email-edit" name="email" type="email" defaultValue={selectedBooking?.guest.email} required />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="checkin-edit" className="text-right">
-                      Check-in
-                    </Label>
-                    <DatePicker name="checkin" initialDate={selectedBooking?.checkIn ? new Date(selectedBooking.checkIn) : undefined} />
+                   <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="checkin-edit">Check-in</Label>
+                            <DatePicker name="checkin" initialDate={selectedBooking?.checkIn ? new Date(selectedBooking.checkIn) : undefined} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="checkout-edit">Check-out</Label>
+                            <DatePicker name="checkout" initialDate={selectedBooking?.checkOut ? new Date(selectedBooking.checkOut) : undefined}/>
+                        </div>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="checkout-edit" className="text-right">
-                      Check-out
-                    </Label>
-                    <DatePicker name="checkout" initialDate={selectedBooking?.checkOut ? new Date(selectedBooking.checkOut) : undefined}/>
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="status-edit" className="text-right">
-                      Status
-                    </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="status-edit">Status</Label>
                     <Select name="status" defaultValue={selectedBooking?.status}>
-                      <SelectTrigger id="status-edit" className="col-span-3">
+                      <SelectTrigger id="status-edit">
                         <SelectValue placeholder="Select a status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -370,7 +380,7 @@ function GuestsPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                  <Button variant="outline" type="button" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                   <Button type="submit">Save Changes</Button>
                 </DialogFooter>
               </form>
@@ -380,38 +390,5 @@ function GuestsPage() {
     </AppLayout>
   );
 }
-
-function DatePicker({name, initialDate}: {name: string, initialDate?: Date}) {
-  const [date, setDate] = useState<Date | undefined>(initialDate)
-
-  return (
-    <>
-    <input type="hidden" name={name} value={date ? date.toISOString() : ''} />
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-          className={cn(
-            "col-span-3 justify-start text-left font-normal",
-            !date && "text-muted-foreground"
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP") : <span>Pick a date</span>}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
-    </>
-  )
-}
-
 
 export default withAuth(GuestsPage);

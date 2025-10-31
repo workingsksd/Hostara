@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 
@@ -15,11 +15,18 @@ import {
 } from "@/components/ui/popover"
 
 export function DatePicker({name, initialDate}: {name: string, initialDate?: Date}) {
-  const [date, setDate] = useState<Date | undefined>(initialDate)
+  const [date, setDate] = useState<Date | undefined>(initialDate);
+
+  useEffect(() => {
+    // This effect ensures that when the dialog is re-opened with a different
+    // `initialDate`, the component's internal state updates.
+    setDate(initialDate);
+  }, [initialDate]);
+
 
   return (
     <>
-      <input type="hidden" name={name} value={date ? date.toISOString() : ''} />
+      <input type="hidden" name={name} value={date ? date.toISOString().split('T')[0] : ''} />
       <Popover>
         <PopoverTrigger asChild>
           <Button

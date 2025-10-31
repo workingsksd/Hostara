@@ -77,7 +77,7 @@ const initialStaff: StaffMember[] = [
   },
 ];
 
-const onDutyStatusVariant: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+const onDutyStatusVariant: { [key: string]: 'default' | 'secondary' } = {
   "On Duty": "default",
   "Off Duty": "secondary",
 };
@@ -166,12 +166,14 @@ function StaffPage() {
   };
   
   const handleUpdateTaskStatus = (task: StaffTask) => {
-    const nextStatus = task.status === 'Pending' ? 'In Progress' : 'Completed';
-    updateTaskStatus(task.id, nextStatus);
-    toast({
-        title: 'Task Updated',
-        description: `"${task.title}" is now ${nextStatus}.`
-    });
+    const next = nextTaskStatus[task.status];
+    if (next) {
+        updateTaskStatus(task.id, next);
+        toast({
+            title: 'Task Updated',
+            description: `"${task.title}" is now ${next}.`
+        });
+    }
   };
 
 
@@ -332,5 +334,3 @@ function StaffPage() {
 }
 
 export default withAuth(StaffPage);
-
-    

@@ -53,7 +53,7 @@ const initialVisitorLog: Visitor[] = [
     { id: 'v-002', name: 'Bob Williams', date: '2024-08-20', timeIn: '15:00', timeOut: null, visiting: 'Marcus Thorne (Lodge 5)', status: 'Inside', avatar: 'https://picsum.photos/seed/visitor2/40/40'},
 ];
 
-const statusVariant: { [key: string]: 'default' | 'secondary' } = {
+const statusVariant: { [key in Visitor['status']]: 'default' | 'secondary' } = {
   'Inside': 'default',
   'Logged Out': 'secondary',
 }
