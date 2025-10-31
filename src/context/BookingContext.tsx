@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useState, ReactNode, FC } from 'react';
+import { createContext, useState, ReactNode, FC, useEffect } from 'react';
 import { placeholderImages } from '@/lib/placeholder-images';
 
 export type Booking = {
@@ -58,6 +58,15 @@ export type StaffTask = {
     dueDate: string;
 };
 
+type GuestProfile = {
+    email: string;
+    name: string;
+    avatar: string | undefined;
+    totalStays: number;
+    totalSpend: number;
+    stayHistory: { room: string; checkIn: string; checkOut: string }[];
+}
+
 
 const initialBookings: Booking[] = [
   {
@@ -112,6 +121,19 @@ const initialBookings: Booking[] = [
     type: 'Restaurant',
     room: 'Table 7',
   },
+    {
+    id: 'booking-5',
+    guest: {
+      name: 'Eleanor Vance',
+      email: 'eleanor@example.com',
+      avatar: placeholderImages.find(p => p.id === 'user-avatar-2')?.imageUrl,
+    },
+    status: 'Checked-out',
+    checkIn: '2024-07-01',
+    checkOut: '2024-07-05',
+    type: 'Hotel',
+    room: 'Sea View 402',
+  },
 ];
 
 const initialMaintenanceTasks: MaintenanceTask[] = [
@@ -125,6 +147,7 @@ const initialTransactions: Transaction[] = [
     { id: 'txn-002', guest: 'Marcus Thorne', date: new Date().toISOString(), type: 'Restaurant', amount: 3200, status: 'Paid'},
     { id: 'txn-003', guest: 'John Doe', date: new Date().toISOString(), type: 'Room Service', amount: 1500, status: 'Pending'},
     { id: 'txn-004', guest: 'Sophia Loren', date: '2024-08-17', type: 'Lodge', amount: 9800, status: 'Paid'},
+    { id: 'txn-005', guest: 'Eleanor Vance', date: '2024-07-04', type: 'Room', amount: 22000, status: 'Paid'},
 ];
 
 const initialTasks: StaffTask[] = [
@@ -150,6 +173,7 @@ interface BookingContextType {
   tasks: StaffTask[];
   addTask: (task: Omit<StaffTask, 'id' | 'status'>) => void;
   updateTaskStatus: (taskId: string, status: StaffTask['status']) => void;
+  guestProfiles: GuestProfile[];
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -168,6 +192,7 @@ export const BookingContext = createContext<BookingContextType>({
   tasks: [],
   addTask: () => {},
   updateTaskStatus: () => {},
+  guestProfiles: [],
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -176,6 +201,49 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [tasks, setTasks] = useState<StaffTask[]>(initialTasks);
+  const [guestProfiles, setGuestProfiles] = useState<GuestProfile[]>([]);
+
+  useEffect(() => {
+    const profiles: { [email: string]: GuestProfile } = {};
+
+    // Process bookings
+    bookings.forEach(booking => {
+      const { email, name, avatar } = booking.guest;
+      if (!profiles[email]) {
+        profiles[email] = {
+          email,
+          name,
+          avatar,
+          totalStays: 0,
+          totalSpend: 0,
+          stayHistory: [],
+        };
+      }
+      profiles[email].totalStays += 1;
+      profiles[email].stayHistory.push({
+        room: booking.room,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+      });
+    });
+
+    // Process transactions
+    transactions.forEach(transaction => {
+      // Find guest email from bookings
+      const booking = bookings.find(b => b.guest.name === transaction.guest);
+      if (booking) {
+        const { email } = booking.guest;
+        if (profiles[email]) {
+            if (transaction.status === 'Paid') {
+                profiles[email].totalSpend += transaction.amount;
+            }
+        }
+      }
+    });
+
+    setGuestProfiles(Object.values(profiles).sort((a, b) => b.totalSpend - a.totalSpend));
+  }, [bookings, transactions]);
+
 
   const addBooking = (booking: Booking) => {
     setBookings(prev => [booking, ...prev]);
@@ -250,7 +318,8 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         maintenanceTasks, addMaintenanceTask, 
         orders, addOrder, updateOrderStatus, 
         transactions, addTransaction, settleTransaction,
-        tasks, addTask, updateTaskStatus
+        tasks, addTask, updateTaskStatus,
+        guestProfiles,
     }}>
       {children}
     </BookingContext.Provider>
