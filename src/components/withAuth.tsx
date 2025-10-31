@@ -5,33 +5,43 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 
-type Role = 'manager' | 'staff' | 'chef' | 'guest' | 'finance' | 'housekeeping' | 'receptionist' | null;
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Restaurant Staff' | 'Chef/Kitchen' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Chef' | 'Staff' | null;
 
 // Define page permissions based on roles
 const pagePermissions: { [key: string]: Role[] } = {
-    '/': ['manager'], // Only manager can see the main dashboard
-    '/guests': ['manager', 'receptionist', 'staff'],
-    '/guests/kyc': ['manager', 'receptionist', 'staff'],
-    '/housekeeping': ['manager', 'housekeeping', 'staff'],
-    '/restaurant': ['manager', 'chef', 'staff'],
-    '/restaurant/orders': ['manager', 'chef', 'staff'],
-    '/inventory': ['manager', 'chef'],
-    '/staff': ['manager'],
-    '/billing': ['manager', 'finance'],
-    '/reporting': ['manager', 'finance'],
-    '/integrations': ['manager'],
-    '/security': ['manager', 'receptionist', 'staff'],
-    '/guest-portal': ['guest'],
+    '/': ['Admin'], // Only admin can see the main dashboard
+    '/guests': ['Admin', 'Front Office Staff', 'Receptionist'],
+    '/guests/kyc': ['Admin', 'Front Office Staff', 'Receptionist'],
+    '/housekeeping': ['Admin', 'Housekeeping', 'Maintenance Team'],
+    '/restaurant': ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'],
+    '/restaurant/orders': ['Admin', 'Chef/Kitchen', 'Chef'],
+    '/inventory': ['Admin', 'Inventory Manager'],
+    '/staff': ['Admin', 'HR Manager'],
+    '/billing': ['Admin', 'Finance Manager', 'Finance'],
+    '/reporting': ['Admin', 'Finance Manager', 'Finance'],
+    '/integrations': ['Admin'],
+    '/security': ['Admin', 'Security Staff'],
+    '/guest-portal': ['Guest'],
 };
 
 const defaultRoutes: { [key in Exclude<Role, null>]: string } = {
-    manager: '/',
-    staff: '/housekeeping', // Default for general staff
-    receptionist: '/guests',
-    housekeeping: '/housekeeping',
-    finance: '/billing',
-    chef: '/restaurant/orders',
-    guest: '/guest-portal',
+    'Admin': '/',
+    'Front Office Staff': '/guests',
+    'Housekeeping': '/housekeeping',
+    'Maintenance Team': '/housekeeping',
+    'Restaurant Staff': '/restaurant',
+    'Chef/Kitchen': '/restaurant/orders',
+    'Inventory Manager': '/inventory',
+    'HR Manager': '/staff',
+    'Finance Manager': '/billing',
+    'Security Staff': '/security',
+    'Guest': '/guest-portal',
+    // Lodge specific
+    'Receptionist': '/guests',
+    'Finance': '/billing',
+    // Restaurant specific
+    'Chef': '/restaurant/orders',
+    'Staff': '/restaurant',
 };
 
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
@@ -47,11 +57,12 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
       const userRole = localStorage.getItem('userRole') as Role;
-      const entityType = localStorage.getItem('entityType');
+      const organisationType = localStorage.getItem('organisationType');
 
       if (isAuthPage) {
         if (user) {
-          router.replace('/');
+          const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
+          router.replace(defaultRoute || '/');
         }
       } else {
         if (!user) {
@@ -59,17 +70,22 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
           return;
         } 
         
-        if (entityType === 'Lodge' && userRole && userRole !== 'manager' && pathname === '/') {
+        if (organisationType === 'Lodge' && userRole && userRole !== 'Admin' && pathname === '/') {
             const defaultRoute = defaultRoutes[userRole] || '/';
             router.replace(defaultRoute);
             return;
         }
 
-        const allowedRoles = pagePermissions[pathname] || ['manager']; // Default to manager only
+        const allowedRoles = pagePermissions[pathname] || ['Admin']; // Default to Admin only
         if (!userRole || !allowedRoles.includes(userRole)) {
             console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
             const defaultRoute = userRole ? defaultRoutes[userRole] : '/login';
-            router.replace(defaultRoute);
+            // Safety check for defaultRoute
+            if (defaultRoute) {
+                router.replace(defaultRoute);
+            } else {
+                router.replace('/login');
+            }
         }
       }
     }, [router, pathname, user, loading]);
@@ -89,7 +105,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 
     if (!isAuthPage && user) {
         const userRole = localStorage.getItem('userRole') as Role;
-        const allowedRoles = pagePermissions[pathname] || ['manager'];
+        const allowedRoles = pagePermissions[pathname] || ['Admin'];
         if (userRole && allowedRoles.includes(userRole)) {
           return <WrappedComponent {...props} />;
         }
