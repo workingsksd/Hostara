@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import withAuth from "@/components/withAuth";
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,8 +19,7 @@ type EntityType = "Hotel" | "Lodge" | "Restaurant";
 
 function RegisterPage() {
   const router = useRouter();
-  const { app } = useFirebase();
-  const auth = getAuth(app);
+  const { auth } = useFirebase();
   const { toast } = useToast();
 
   const [name, setName] = useState('');
@@ -41,6 +40,11 @@ function RegisterPage() {
       return;
     }
     setLoading(true);
+    if (!auth) {
+      toast({ variant: "destructive", title: "Firebase not initialized." });
+      setLoading(false);
+      return;
+    }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
@@ -126,7 +130,7 @@ function RegisterPage() {
               {loading ? 'Registering...' : 'Register'}
             </Button>
             <div className="text-sm text-center text-muted-foreground">
-              Already have an account? <Link href="/login" className="underline text-foreground hover:text-primary-foreground">Login here</Link>
+              Already have an account? <Link href="/login" className="underline text-foreground hover:text-primary">Login here</Link>
             </div>
           </CardFooter>
         </form>

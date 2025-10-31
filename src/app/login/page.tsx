@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import withAuth from "@/components/withAuth";
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -20,8 +20,7 @@ type EntityType = "Hotel" | "Lodge" | "Restaurant";
 function LoginPage() {
   const router = useRouter();
   const [entityType, setEntityType] = useState<EntityType>("Hotel");
-  const { app } = useFirebase();
-  const auth = getAuth(app);
+  const { auth } = useFirebase();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +29,11 @@ function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (!auth) {
+      toast({ variant: "destructive", title: "Firebase not initialized." });
+      setLoading(false);
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, email, password);
       localStorage.setItem("entityType", entityType);
@@ -47,6 +51,11 @@ function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    if (!auth) {
+      toast({ variant: "destructive", title: "Firebase not initialized." });
+      setLoading(false);
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -109,7 +118,7 @@ function LoginPage() {
             
             <div className="relative w-full">
                 <Separator className="absolute top-1/2 -translate-y-1/2"/>
-                <span className="relative bg-card-foreground text-background px-2 text-xs uppercase mx-auto flex w-fit">Or continue with</span>
+                <span className="relative bg-card text-card-foreground px-2 text-xs uppercase mx-auto flex w-fit">Or continue with</span>
             </div>
 
             <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignIn} disabled={loading}>
@@ -118,7 +127,7 @@ function LoginPage() {
             </Button>
             
             <div className="text-sm text-center text-muted-foreground">
-              Don't have an account? <Link href="/register" className="underline text-foreground hover:text-primary-foreground">Register here</Link>
+              Don't have an account? <Link href="/register" className="underline text-foreground hover:text-primary">Register here</Link>
             </div>
           </CardFooter>
         </form>

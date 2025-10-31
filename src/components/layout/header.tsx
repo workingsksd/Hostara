@@ -21,16 +21,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useUser } from "@/firebase"
-import { getAuth, signOut } from "firebase/auth"
+import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 
 export function AppHeader() {
-  const { user, app } = useUser();
+  const { user, auth } = useUser();
   const router = useRouter();
 
   const handleLogout = async () => {
-    if (!app) return;
-    const auth = getAuth(app);
+    if (!auth) return;
     await signOut(auth);
     localStorage.removeItem("userRole");
     localStorage.removeItem("entityType");
