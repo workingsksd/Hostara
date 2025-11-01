@@ -272,6 +272,7 @@ interface BookingContextType {
   addMaintenanceTask: (task: MaintenanceTask) => void;
   orders: Order[];
   addOrder: (order: Order) => void;
+  addExternalOrder: (platform: string, items: OrderItem[]) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
@@ -311,6 +312,7 @@ export const BookingContext = createContext<BookingContextType>({
   addMaintenanceTask: () => {},
   orders: [],
   addOrder: () => {},
+  addExternalOrder: () => {},
   updateOrderStatus: () => {},
   transactions: [],
   addTransaction: () => {},
@@ -446,13 +448,10 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setMaintenanceTasks(prev => [task, ...prev]);
   };
 
-  const addOrder = (order: Order) => {
-    setOrders(prev => [order, ...prev]);
-    
-    // Deduct stock from inventory
-    setInventory(prevInventory => {
+  const processOrderStock = (items: OrderItem[]) => {
+     setInventory(prevInventory => {
         const newInventory = [...prevInventory];
-        order.items.forEach(orderItem => {
+        items.forEach(orderItem => {
             orderItem.recipe.forEach(ingredient => {
                 const itemIndex = newInventory.findIndex(invItem => invItem.id === ingredient.inventoryId);
                 if (itemIndex > -1) {
@@ -471,6 +470,25 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         });
         return newInventory;
     });
+  }
+
+  const addOrder = (order: Order) => {
+    setOrders(prev => [order, ...prev]);
+    processOrderStock(order.items);
+  };
+
+  const addExternalOrder = (platform: string, items: OrderItem[]) => {
+    const newOrder: Order = {
+      id: `ext-order-${Date.now()}`,
+      guestId: 'external',
+      guestName: `${platform} #${Math.floor(Math.random() * 10000)}`,
+      items: items,
+      total: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      status: 'New',
+      createdAt: new Date().toISOString(),
+    };
+    setOrders(prev => [newOrder, ...prev]);
+    processOrderStock(newOrder.items);
   };
 
   const updateOrderStatus = (orderId: string, status: Order['status']) => {
@@ -620,7 +638,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     <BookingContext.Provider value={{ 
         bookings, addBooking, updateBooking, deleteBooking, 
         maintenanceTasks, addMaintenanceTask, 
-        orders, addOrder, updateOrderStatus, 
+        orders, addOrder, addExternalOrder, updateOrderStatus, 
         transactions, addTransaction, settleTransaction,
         tasks, addTask, updateTaskStatus,
         guestProfiles,
@@ -635,5 +653,3 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     </BookingContext.Provider>
   );
 };
-
-  
