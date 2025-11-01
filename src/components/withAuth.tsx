@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 
@@ -45,19 +45,16 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     const router = useRouter();
     const pathname = usePathname();
     const { user, loading } = useUser();
-    const [render, setRender] = useState(false);
-
+    
     useEffect(() => {
       if (loading) {
-        return;
+        return; // Wait until user status is resolved
       }
 
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-      
+
       if (!user) {
-        if (isAuthPage) {
-          setRender(true);
-        } else {
+        if (!isAuthPage) {
           router.replace('/login');
         }
         return;
@@ -78,29 +75,48 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
           return;
       }
 
-      // Find the base path for permission checking (e.g., /staff/schedule -> /staff)
+      // Find the base path for permission checking
       const pageKey = Object.keys(pagePermissions).find(key => pathname.startsWith(key) && key !== '/');
       const basePath = pageKey || '/';
       
       const allowedRoles = pagePermissions[basePath];
 
-      if (userRole && (allowedRoles?.includes(userRole) || userRole === 'Admin')) {
-          setRender(true);
-      } else {
+      if (!userRole || !(allowedRoles?.includes(userRole) || userRole === 'Admin')) {
           console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
           router.replace(defaultRoute);
       }
 
     }, [router, pathname, user, loading]);
 
-    if (loading || !render) {
+    // Determine what to render
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+    if (loading) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
           <div className="text-lg font-semibold">Loading...</div>
         </div>
       );
     }
+
+    if (!user && !isAuthPage) {
+        // Being redirected to login, show loading to prevent flashing content
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+              <div className="text-lg font-semibold">Loading...</div>
+            </div>
+        );
+    }
     
+    if (user && isAuthPage) {
+        // Being redirected to dashboard, show loading
+         return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+              <div className="text-lg font-semibold">Loading...</div>
+            </div>
+        );
+    }
+
+    // If all checks pass, render the component
     return <WrappedComponent {...props} />;
   };
 
