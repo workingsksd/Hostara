@@ -5,6 +5,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { BookingProvider } from '@/context/BookingContext';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/firebase/auth/use-user';
 
 export const metadata: Metadata = {
   title: 'OptiServe ERP',
@@ -25,12 +26,14 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <BookingProvider>
-              <SidebarProvider>
-              {children}
-              </SidebarProvider>
-              <Toaster />
-          </BookingProvider>
+          <UserProvider>
+            <BookingProvider>
+                <SidebarProvider>
+                {children}
+                </SidebarProvider>
+                <Toaster />
+            </BookingProvider>
+          </UserProvider>
         </FirebaseClientProvider>
       </body>
     </html>
