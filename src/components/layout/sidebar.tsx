@@ -98,8 +98,8 @@ export function AppSidebar() {
       return false;
     }
     
-    // Hide hotel/lodge specific dashboard for other org types
-    if (organisationType !== 'Hotel' && organisationType !== 'Lodge' && userRole !== 'Admin' && link.href === '/') {
+    // Hide hotel/lodge specific dashboard for other org types if they aren't admin
+    if (organisationType === 'Restaurant' && link.href === '/' && userRole !== 'Admin') {
         return false;
     }
     
@@ -124,9 +124,8 @@ export function AppSidebar() {
                 const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
                 const isActive = (link.href !== '/' && pathname.startsWith(link.href)) || pathname === link.href;
                 
-                // For restaurant, POS is the default page
-                if (organisationType === 'Restaurant' && link.href === '/restaurant' && pathname === '/') {
-                    return null; // Don't show dashboard link, handled by withAuth redirect
+                if (organisationType === 'Restaurant' && link.href === '/') {
+                  if(userRole !== 'Admin') return null;
                 }
 
                 return (
