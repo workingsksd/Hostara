@@ -34,7 +34,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppSidebar as AppSidebarWrapper } from './sidebar-wrapper';
 
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager';
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager' | null;
 type OrganisationType = 'Hotel' | 'Lodge' | 'Restaurant' | null;
 
 type NavLink = {
@@ -94,34 +94,34 @@ export function AppSidebar() {
   }, []);
 
   const hasAccess = (link: NavLink) => {
-    if (!userRole || !organisationType) {
-      return false; // Can't determine access if role/org isn't loaded
+    if (!isClient || !userRole || !organisationType) {
+      return false; // Don't show anything if role/org isn't loaded yet
     }
 
-    // 1. Check if the link is for the user's organization type.
+    // 1. Check if the link is relevant for the user's organization type
     if (!link.entities.includes(organisationType)) {
       return false;
     }
-    
-    // 2. Handle specific dashboard visibility
+
+    // 2. Handle specific dashboard visibility overrides
     if (organisationType === 'Restaurant' && link.href === '/') {
         return false; // Hide main dashboard for restaurant staff
     }
-    if ((organisationType === 'Hotel' || organisationType === 'Lodge') && link.href === '/restaurant') {
-        return false; // Hide restaurant POS for hotel/lodge staff
+    if ((organisationType === 'Hotel' || organisationType === 'Lodge') && link.href.startsWith('/restaurant')) {
+        return false; // Hide restaurant POS and sub-routes for hotel/lodge staff
     }
 
-    // 3. Admin has access to everything within their organization type.
+    // 3. Admin gets access to everything within their organization type
     if (userRole === 'Admin') {
       return true;
     }
 
-    // 4. For non-admins, check if their role is in the link's allowed roles.
+    // 4. For non-admins, check if their role is in the link's allowed roles list
     if (link.roles.includes(userRole)) {
       return true;
     }
 
-    // 5. Deny by default
+    // 5. If none of the above, deny access
     return false;
   };
 
