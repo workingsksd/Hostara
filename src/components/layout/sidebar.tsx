@@ -51,7 +51,7 @@ const navLinks: NavLink[] = [
     { 
       href: "/restaurant", 
       icon: Utensils, 
-      label: "Restaurant & F&B", 
+      label: "Restaurant POS", 
       roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], 
       entities: ['Restaurant'],
       subItems: [
@@ -95,32 +95,33 @@ export function AppSidebar() {
 
   const hasAccess = (link: NavLink) => {
     if (!userRole || !organisationType) {
-      return false; // Cannot determine access without role or org type
+      return false; // Can't determine access if role/org isn't loaded
     }
-  
-    // Check 1: Does the link apply to the user's organization type?
+
+    // 1. Check if the link is for the user's organization type.
     if (!link.entities.includes(organisationType)) {
       return false;
     }
-  
-    // Check 2: If the user is an Admin, they have access to everything for their org type.
+    
+    // 2. Handle specific dashboard visibility
+    if (organisationType === 'Restaurant' && link.href === '/') {
+        return false; // Hide main dashboard for restaurant staff
+    }
+    if ((organisationType === 'Hotel' || organisationType === 'Lodge') && link.href === '/restaurant') {
+        return false; // Hide restaurant POS for hotel/lodge staff
+    }
+
+    // 3. Admin has access to everything within their organization type.
     if (userRole === 'Admin') {
-      // But Restaurant Admins shouldn't see the main Hotel/Lodge dashboard
-      if (organisationType === 'Restaurant' && link.href === '/') {
-        return false;
-      }
-      // And Hotel/Lodge Admins shouldn't see the main Restaurant dashboard
-      if ((organisationType === 'Hotel' || organisationType === 'Lodge') && link.href === '/restaurant') {
-        return false;
-      }
       return true;
     }
-  
-    // Check 3: For non-admin roles, check if their role is explicitly allowed by the link.
+
+    // 4. For non-admins, check if their role is in the link's allowed roles.
     if (link.roles.includes(userRole)) {
       return true;
     }
-  
+
+    // 5. Deny by default
     return false;
   };
 
