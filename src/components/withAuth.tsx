@@ -17,6 +17,8 @@ const pagePermissions: { [key: string]: Role[] } = {
     '/restaurant/orders': ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'],
     '/inventory': ['Admin', 'Inventory Manager'],
     '/staff': ['Admin', 'HR Manager', 'Maintenance Team'],
+    '/staff/schedule': ['Admin', 'HR Manager'],
+    '/staff/attendance': ['Admin', 'HR Manager'],
     '/billing': ['Admin', 'Finance Manager', 'Finance'],
     '/revenue': ['Admin', 'Finance Manager'],
     '/reporting': ['Admin', 'Finance Manager', 'Finance'],
@@ -54,49 +56,48 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 
     useEffect(() => {
       if (loading) {
-        return; // Wait until user status is resolved
+        setIsRenderAllowed(false);
+        return; 
       }
 
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
       
-      if (!user && !isAuthPage) {
-        // Not logged in and not on an auth page, redirect to login
-        router.replace('/login');
+      if (!user) {
+        // Not logged in
+        if (isAuthPage) {
+            setIsRenderAllowed(true);
+        } else {
+            router.replace('/login');
+        }
         return;
       }
 
-      if (user) {
-         if (isAuthPage) {
-            // Logged in user on an auth page, redirect to their default route
-            const userRole = localStorage.getItem('userRole') as Role;
-            const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
-            router.replace(defaultRoute);
-            return;
-         }
+      // User is logged in
+      const userRole = localStorage.getItem('userRole') as Role;
+      const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
 
-        // Logged-in user on a protected page, check permissions
-        const userRole = localStorage.getItem('userRole') as Role;
-        const organisationType = localStorage.getItem('organisationType');
-        
-        // Specific rule for Lodge non-admins on dashboard
-        if (organisationType === 'Lodge' && userRole !== 'Admin' && pathname === '/') {
-            const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
-            router.replace(defaultRoute);
-            return;
-        }
+      if (isAuthPage) {
+        // Logged in user on an auth page, redirect to their default route
+        router.replace(defaultRoute);
+        return;
+      }
+      
+      const organisationType = localStorage.getItem('organisationType');
+      if (organisationType === 'Lodge' && userRole !== 'Admin' && pathname === '/') {
+          router.replace(defaultRoute);
+          return;
+      }
 
-        const allowedRoles = pagePermissions[pathname] || ['Admin'];
-        if (userRole && allowedRoles.includes(userRole)) {
-            setIsRenderAllowed(true);
-        } else {
-            console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
-            const defaultRoute = userRole ? defaultRoutes[userRole] : '/login';
-            router.replace(defaultRoute);
-            return;
-        }
+      const allowedRoles = Object.keys(pagePermissions).find(key => pathname.startsWith(key)) 
+          ? pagePermissions[Object.keys(pagePermissions).find(key => pathname.startsWith(key))!] 
+          : ['Admin'];
+
+
+      if (userRole && (allowedRoles.includes(userRole) || userRole === 'Admin')) {
+          setIsRenderAllowed(true);
       } else {
-        // Not logged in, but on an auth page, so allow render
-        setIsRenderAllowed(true);
+          console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
+          router.replace(defaultRoute);
       }
 
     }, [router, pathname, user, loading]);
@@ -104,7 +105,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     if (loading || !isRenderAllowed) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
-          <p>Loading...</p>
+          <div className="text-lg font-semibold">Loading...</div>
         </div>
       );
     }
