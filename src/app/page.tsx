@@ -6,11 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BedDouble, BookOpenCheck, Bot, Building, Users, Wrench, Sparkles, Trash2, Clock } from "lucide-react";
+import { BedDouble, BookOpenCheck, Bot, Building, Users, Wrench, Sparkles, Trash2, Clock, CookingPot } from "lucide-react";
 import { placeholderImages } from "@/lib/placeholder-images";
 import { BookingsChart } from "@/components/dashboard/bookings-chart";
 import { AppLayout } from "@/components/layout/app-layout";
 import { BookingContext } from "@/context/BookingContext";
+import { useRouter } from "next/navigation";
+
 
 const recentBookings = [
   {
@@ -41,7 +43,22 @@ const recentBookings = [
 
 
 function DashboardPage() {
-  const { maintenanceTasks } = useContext(BookingContext);
+  const { maintenanceTasks, orders, tables } = useContext(BookingContext);
+  const router = useRouter();
+  
+  const organisationType = typeof window !== 'undefined' ? localStorage.getItem('organisationType') : null;
+
+  if (organisationType === 'Restaurant') {
+    // Redirect to the restaurant page if the user is in a restaurant org
+    router.replace('/restaurant');
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <div className="text-lg font-semibold">Loading Restaurant Dashboard...</div>
+        </div>
+    );
+  }
+
+
   return (
     <AppLayout>
       <div className="space-y-8">

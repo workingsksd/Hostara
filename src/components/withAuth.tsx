@@ -1,28 +1,30 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | null;
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager' | null;
 
 // Define page permissions based on roles
 const pagePermissions: { [key: string]: Role[] } = {
-    '/': ['Admin'], // Only admin can see the main dashboard
+    '/': ['Admin'],
     '/guests': ['Admin', 'Front Office Staff', 'Receptionist'],
     '/guests/kyc': ['Admin', 'Front Office Staff', 'Receptionist'],
     '/housekeeping': ['Admin', 'Housekeeping'],
-    '/inventory': ['Admin', 'Inventory Manager'],
-    '/staff': ['Admin', 'HR Manager', 'Maintenance Team'],
+    '/inventory': ['Admin', 'Inventory Manager', 'Restaurant Manager'],
+    '/staff': ['Admin', 'HR Manager'],
     '/staff/schedule': ['Admin', 'HR Manager'],
     '/staff/attendance': ['Admin', 'HR Manager'],
     '/billing': ['Admin', 'Finance Manager', 'Finance'],
     '/revenue': ['Admin', 'Finance Manager'],
-    '/reporting': ['Admin', 'Finance Manager', 'Finance'],
-    '/integrations': ['Admin'],
+    '/reporting': ['Admin', 'Finance Manager', 'Restaurant Manager'],
+    '/integrations': ['Admin', 'Restaurant Manager'],
     '/security': ['Admin', 'Security Staff'],
     '/guest-portal': ['Admin'],
+    '/restaurant': ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'],
+    '/restaurant/orders': ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'],
 };
 
 const defaultRoutes: { [key in Exclude<Role, null>]: string } = {
@@ -35,9 +37,12 @@ const defaultRoutes: { [key in Exclude<Role, null>]: string } = {
     'Finance Manager': '/billing',
     'Security Staff': '/security',
     'Guest': '/guest-portal',
-    // Lodge specific
     'Receptionist': '/guests',
     'Finance': '/billing',
+    // Restaurant roles
+    'Restaurant Manager': '/restaurant',
+    'Chef': '/restaurant/orders',
+    'Waiter': '/restaurant',
 };
 
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
@@ -62,6 +67,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 
       // User is logged in
       const userRole = localStorage.getItem('userRole') as Role;
+      const organisationType = localStorage.getItem('organisationType');
       const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
 
       if (isAuthPage) {
@@ -69,54 +75,55 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         return;
       }
       
-      const organisationType = localStorage.getItem('organisationType');
-      if (organisationType === 'Lodge' && userRole !== 'Admin' && pathname === '/') {
+      // Special redirect for non-admin restaurant roles from the main dashboard
+      if (organisationType === 'Restaurant' && pathname === '/' && userRole !== 'Admin') {
           router.replace(defaultRoute);
           return;
       }
 
       // Find the base path for permission checking
-      const pageKey = Object.keys(pagePermissions).find(key => pathname.startsWith(key) && key !== '/');
-      const basePath = pageKey || '/';
+      // This allows /staff/schedule to match the /staff permission key
+      const basePath = Object.keys(pagePermissions).find(key => key !== '/' && pathname.startsWith(key)) || '/';
       
       const allowedRoles = pagePermissions[basePath];
 
       if (!userRole || !(allowedRoles?.includes(userRole) || userRole === 'Admin')) {
-          console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
+          console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'. Redirecting to '${defaultRoute}'`);
           router.replace(defaultRoute);
       }
 
     }, [router, pathname, user, loading]);
 
-    // Determine what to render
-    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+    // Show a loading screen while authentication is in progress.
     if (loading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-          <div className="text-lg font-semibold">Loading...</div>
-        </div>
-      );
-    }
-
-    if (!user && !isAuthPage) {
-        // Being redirected to login, show loading to prevent flashing content
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
-              <div className="text-lg font-semibold">Loading...</div>
+                <div className="text-lg font-semibold">Loading...</div>
             </div>
         );
     }
     
-    if (user && isAuthPage) {
-        // Being redirected to dashboard, show loading
-         return (
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+
+    // If user is not logged in and not on an auth page, we are redirecting, so show loading.
+    if (!user && !isAuthPage) {
+        return (
             <div className="flex items-center justify-center min-h-screen bg-background">
-              <div className="text-lg font-semibold">Loading...</div>
+                <div className="text-lg font-semibold">Loading...</div>
             </div>
         );
     }
 
-    // If all checks pass, render the component
+    // If user is logged in and on an auth page, we are redirecting, so show loading.
+    if (user && isAuthPage) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="text-lg font-semibold">Loading...</div>
+            </div>
+        );
+    }
+    
+    // If all checks pass, render the requested component.
     return <WrappedComponent {...props} />;
   };
 

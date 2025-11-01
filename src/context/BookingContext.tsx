@@ -57,14 +57,14 @@ export type Vendor = {
     name: string;
     contactPerson: string;
     phone: string;
-    category: 'Linen' | 'Toiletries' | 'Maintenance';
+    category: 'Linen' | 'Toiletries' | 'Maintenance' | 'F&B';
 };
 
 export type InventoryItem = {
     id: string;
     name: string;
     quantity: number;
-    category: 'Linen' | 'Toiletries' | 'Maintenance';
+    category: 'Linen' | 'Toiletries' | 'Maintenance' | 'F&B';
     unit: 'kg' | 'liters' | 'pieces' | 'packets';
 };
 
@@ -112,6 +112,40 @@ export type AttendanceRecord = {
     staffId: string;
     clockInTime: string;
     clockOutTime: string | null;
+};
+
+export type RecipeIngredient = {
+    itemId: string; // ID of the inventory item
+    quantity: number; // Quantity of the item used in the recipe
+};
+
+export type MenuItem = {
+    id: string;
+    name: string;
+    price: number;
+    category: 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage';
+    recipe: RecipeIngredient[];
+};
+
+export type OrderItem = {
+    menuItemId: string;
+    name: string;
+    quantity: number;
+};
+
+export type Order = {
+    id: string;
+    tableId: string;
+    items: OrderItem[];
+    status: 'New' | 'In Progress' | 'Ready' | 'Served' | 'Paid';
+    timestamp: string;
+};
+
+export type RestaurantTable = {
+    id: string;
+    name: string;
+    status: 'Available' | 'Occupied' | 'Billing';
+    orderId: string | null;
 };
 
 
@@ -174,14 +208,20 @@ const initialTasks: StaffTask[] = [
 ];
 
 const initialVendors: Vendor[] = [
+    { id: 'vendor-1', name: 'Fresh Produce Inc.', contactPerson: 'Mr. Kumar', phone: '9876543210', category: 'F&B' },
     { id: 'vendor-2', name: 'Deluxe Linens', contactPerson: 'Ms. Gupta', phone: '9876543211', category: 'Linen' },
     { id: 'vendor-3', name: 'All-in-One Maintenance', contactPerson: 'Mr. Singh', phone: '9876543212', category: 'Maintenance' },
 ];
 
 const initialInventory: InventoryItem[] = [
+    { id: 'inv-1', name: 'Tomatoes', quantity: 50, category: 'F&B', unit: 'kg' },
+    { id: 'inv-2', name: 'Paneer', quantity: 20, category: 'F&B', unit: 'kg' },
     { id: 'inv-3', name: 'Bath Towels', quantity: 200, category: 'Linen', unit: 'pieces' },
     { id: 'inv-4', name: 'Soap Bars', quantity: 500, category: 'Toiletries', unit: 'pieces' },
     { id: 'inv-5', name: 'LED Bulbs', quantity: 50, category: 'Maintenance', unit: 'pieces' },
+    { id: 'inv-6', name: 'Chicken Breast', quantity: 30, category: 'F&B', unit: 'kg' },
+    { id: 'inv-7', name: 'Cream', quantity: 15, category: 'F&B', unit: 'liters' },
+    { id: 'inv-8', name: 'Garam Masala', quantity: 5, category: 'F&B', unit: 'kg' },
 ];
 
 const initialStaffMembers: StaffMember[] = [
@@ -189,6 +229,8 @@ const initialStaffMembers: StaffMember[] = [
     { id: 'staff-1', name: 'Maria Garcia', role: 'Head Housekeeper', avatar: placeholderImages.find(p => p.id === "user-avatar-2")?.imageUrl },
     { id: 'staff-2', name: 'Liam Gallagher', role: 'Maintenance Lead', avatar: placeholderImages.find(p => p.id === "user-avatar-3")?.imageUrl },
     { id: 'staff-3', name: 'Chloe Nguyen', role: 'Front Desk', avatar: placeholderImages.find(p => p.id === "user-avatar-1")?.imageUrl },
+    { id: 'staff-5', name: 'Ravi Kumar', role: 'Chef', avatar: undefined },
+    { id: 'staff-6', name: 'Priya Singh', role: 'Waiter', avatar: undefined },
 ];
 
 const initialShifts: Shift[] = [
@@ -197,6 +239,22 @@ const initialShifts: Shift[] = [
     { id: 'shift-night', name: 'Night', startTime: '23:00', endTime: '07:00', color: 'bg-indigo-200/50 text-indigo-800' },
     { id: 'shift-off', name: 'Off', startTime: '', endTime: '', color: 'bg-gray-200/50 text-gray-800' },
 ];
+
+const initialMenu: MenuItem[] = [
+    { id: 'menu-1', name: 'Paneer Butter Masala', price: 450, category: 'Main Course', recipe: [{ itemId: 'inv-2', quantity: 0.2 }, { itemId: 'inv-1', quantity: 0.3 }, { itemId: 'inv-7', quantity: 0.05 }, { itemId: 'inv-8', quantity: 0.01 }] },
+    { id: 'menu-2', name: 'Chicken Tikka', price: 550, category: 'Appetizer', recipe: [{ itemId: 'inv-6', quantity: 0.25 }, { itemId: 'inv-8', quantity: 0.02 }] },
+    { id: 'menu-3', name: 'Garlic Naan', price: 90, category: 'Main Course', recipe: [] },
+    { id: 'menu-4', name: 'Gulab Jamun', price: 150, category: 'Dessert', recipe: [] },
+    { id: 'menu-5', name: 'Mineral Water', price: 50, category: 'Beverage', recipe: [] },
+];
+
+const initialTables: RestaurantTable[] = Array.from({ length: 8 }, (_, i) => ({
+    id: `t-${i + 1}`,
+    name: `Table ${i + 1}`,
+    status: 'Available',
+    orderId: null,
+}));
+
 
 interface BookingContextType {
   bookings: Booking[];
@@ -227,6 +285,12 @@ interface BookingContextType {
   attendanceLog: AttendanceRecord[];
   clockIn: (staffId: string) => void;
   clockOut: (attendanceId: string) => void;
+  menu: MenuItem[];
+  orders: Order[];
+  tables: RestaurantTable[];
+  addOrder: (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => void;
+  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  addExternalOrder: (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -258,6 +322,12 @@ export const BookingContext = createContext<BookingContextType>({
   attendanceLog: [],
   clockIn: () => {},
   clockOut: () => {},
+  menu: [],
+  orders: [],
+  tables: [],
+  addOrder: () => {},
+  updateOrderStatus: () => {},
+  addExternalOrder: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -275,6 +345,12 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [schedule, setSchedule] = useState<WeeklySchedule>({});
   const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>([]);
 
+  // Restaurant state
+  const [menu, setMenu] = useState<MenuItem[]>(initialMenu);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [tables, setTables] = useState<RestaurantTable[]>(initialTables);
+
+
   // Initialize a mock schedule
   useEffect(() => {
     const today = new Date();
@@ -288,6 +364,8 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
             'staff-1': 'shift-morning',
             'staff-2': 'shift-morning',
             'staff-3': i < 5 ? 'shift-evening' : 'shift-off', // Weekends off for Chloe
+            'staff-5': i < 5 ? 'shift-evening' : 'shift-off',
+            'staff-6': 'shift-morning',
         };
     }
     setSchedule(newSchedule);
@@ -459,6 +537,70 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     );
   };
   
+  // Restaurant Functions
+  const addOrder = (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => {
+    const newOrder: Order = {
+        ...order,
+        id: `ord-${Date.now()}`,
+        status: 'New',
+        timestamp: new Date().toISOString(),
+    };
+    setOrders(prev => [newOrder, ...prev]);
+    setTables(prev => prev.map(t => t.id === order.tableId ? { ...t, status: 'Occupied', orderId: newOrder.id } : t));
+
+    // Deduct inventory
+    setInventory(prevInventory => {
+        let tempInventory = [...prevInventory];
+        let stockOut = false;
+        order.items.forEach(orderItem => {
+            const menuItem = menu.find(m => m.id === orderItem.menuItemId);
+            if (menuItem?.recipe) {
+                menuItem.recipe.forEach(ingredient => {
+                    const invItemIndex = tempInventory.findIndex(i => i.id === ingredient.itemId);
+                    if (invItemIndex !== -1) {
+                        tempInventory[invItemIndex].quantity -= (ingredient.quantity * orderItem.quantity);
+                        if(tempInventory[invItemIndex].quantity <= 0) {
+                            stockOut = true;
+                            toast({
+                                variant: 'destructive',
+                                title: 'Stock Alert!',
+                                description: `${tempInventory[invItemIndex].name} is now out of stock.`
+                            });
+                        }
+                    }
+                });
+            }
+        });
+        return tempInventory;
+    });
+  };
+
+  const addExternalOrder = (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => {
+    const newOrder: Order = {
+        ...order,
+        id: `ext-${order.tableId.toLowerCase()}-${Date.now()}`,
+        status: 'New',
+        timestamp: new Date().toISOString(),
+    };
+    setOrders(prev => [newOrder, ...prev]);
+    // Note: This does not occupy a physical table.
+    toast({
+        title: 'New Online Order!',
+        description: `An order from ${order.tableId} has been received.`
+    });
+  };
+
+  const updateOrderStatus = (orderId: string, status: Order['status']) => {
+    setOrders(prev => prev.map(o => {
+        if (o.id === orderId) {
+            if (status === 'Served' || status === 'Paid') {
+                setTables(prevTables => prevTables.map(t => t.orderId === orderId ? { ...t, status: 'Billing', orderId: null } : t));
+            }
+            return { ...o, status };
+        }
+        return o;
+    }));
+  };
 
   return (
     <BookingContext.Provider value={{ 
@@ -471,6 +613,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         inventory, purchaseOrders, addPurchaseOrder, updatePurchaseOrderStatus, receiveStock,
         staff, shifts, schedule, updateSchedule,
         attendanceLog, clockIn, clockOut,
+        menu, orders, tables, addOrder, updateOrderStatus, addExternalOrder
     }}>
       {children}
     </BookingContext.Provider>

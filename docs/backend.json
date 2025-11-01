@@ -27,19 +27,19 @@
         "role": {
           "type": "string",
           "description": "The user's role in the system.",
-          "enum": ["Admin", "Front Office Staff", "Housekeeping", "Maintenance Team", "Inventory Manager", "HR Manager", "Finance Manager", "Security Staff", "Guest"]
+          "enum": ["Admin", "Front Office Staff", "Housekeeping", "Maintenance Team", "Inventory Manager", "HR Manager", "Finance Manager", "Security Staff", "Guest", "Waiter", "Chef", "Restaurant Manager"]
         },
         "organisationType": {
           "type": "string",
           "description": "The type of organisation the user belongs to.",
-          "enum": ["Hotel", "Lodge"]
+          "enum": ["Hotel", "Lodge", "Restaurant"]
         }
       },
       "required": ["uid", "email", "role", "organisationType", "displayName"]
     },
     "Booking": {
       "title": "Booking",
-      "description": "Represents a guest booking.",
+      "description": "Represents a guest booking for a Hotel or Lodge.",
       "type": "object",
       "properties": {
         "guestId": {"$ref": "#/entities/UserProfile"},
@@ -82,7 +82,7 @@
         "properties": {
             "name": {"type": "string"},
             "quantity": {"type": "number"},
-            "category": {"type": "string", "enum": ["Linen", "Toiletries", "Maintenance"]},
+            "category": {"type": "string", "enum": ["Linen", "Toiletries", "Maintenance", "F&B"]},
             "organisationType": {"type": "string"}
         },
         "required": ["name", "quantity", "category", "organisationType"]
@@ -99,6 +99,18 @@
             "organisationType": {"type": "string"}
         },
         "required": ["guestId", "amount", "status", "organisationType"]
+    },
+    "RestaurantOrder": {
+        "title": "Restaurant Order",
+        "description": "An order placed at the restaurant.",
+        "type": "object",
+        "properties": {
+            "tableId": {"type": "string"},
+            "items": {"type": "array", "items": {"type": "string"}},
+            "status": {"type": "string", "enum": ["New", "In Progress", "Ready", "Served"]},
+            "organisationType": {"type": "string"}
+        },
+        "required": ["tableId", "items", "status", "organisationType"]
     }
   },
   "auth": {
@@ -111,11 +123,11 @@
     },
     "/bookings/{bookingId}": {
         "schema": { "$ref": "#/entities/Booking" },
-        "description": "Stores all guest bookings."
+        "description": "Stores all guest bookings for hotels and lodges."
     },
     "/rooms/{roomId}": {
         "schema": { "$ref": "#/entities/Room" },
-        "description": "Stores information about all rooms."
+        "description": "Stores information about all rooms in hotels/lodges."
     },
     "/tasks/{taskId}": {
         "schema": { "$ref": "#/entities/Task" },
@@ -123,11 +135,15 @@
     },
     "/inventory/{itemId}": {
         "schema": { "$ref": "#/entities/InventoryItem" },
-        "description": "Stores inventory items."
+        "description": "Stores inventory items for all organisation types."
     },
     "/transactions/{transactionId}": {
         "schema": { "$ref": "#/entities/Transaction" },
         "description": "Stores financial transactions."
+    },
+    "/restaurantOrders/{orderId}": {
+        "schema": { "$ref": "#/entities/RestaurantOrder" },
+        "description": "Stores restaurant orders."
     }
   }
 }

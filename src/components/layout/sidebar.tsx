@@ -27,13 +27,15 @@ import {
   TrendingUp,
   CalendarDays,
   Timer,
+  Utensils,
+  CookingPot
 } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppSidebar as AppSidebarWrapper } from './sidebar-wrapper';
 
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance';
-type OrganisationType = 'Hotel' | 'Lodge' | null;
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager';
+type OrganisationType = 'Hotel' | 'Lodge' | 'Restaurant' | null;
 
 type NavLink = {
     href: string;
@@ -45,27 +47,37 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['Admin'], entities: ['Hotel', 'Lodge']},
+    { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+    { 
+      href: "/restaurant", 
+      icon: Utensils, 
+      label: "Restaurant & F&B", 
+      roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], 
+      entities: ['Restaurant'],
+      subItems: [
+           { href: "/restaurant/orders", icon: CookingPot, label: "Kitchen Display", roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant']},
+      ]
+    },
     { href: "/guests", icon: Users, label: "Front Office", roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge']},
     { href: "/housekeeping", icon: BedDouble, label: "Housekeeping", roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge']},
-    { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager'], entities: ['Hotel', 'Lodge'] },
+    { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
     { 
         href: "/staff", 
         icon: UsersRound, 
         label: "HR Management", 
-        roles: ['Admin', 'HR Manager', 'Maintenance Team'], 
-        entities: ['Hotel', 'Lodge'],
+        roles: ['Admin', 'HR Manager'], 
+        entities: ['Hotel', 'Lodge', 'Restaurant'],
         subItems: [
-             { href: "/staff/schedule", icon: CalendarDays, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge']},
-             { href: "/staff/attendance", icon: Timer, label: "Attendance Log", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge']}
+             { href: "/staff/schedule", icon: CalendarDays, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+             { href: "/staff/attendance", icon: Timer, label: "Attendance Log", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']}
         ]
     },
     { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge']},
     { href: "/revenue", icon: TrendingUp, label: "Revenue", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
     { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
     { href: "/security", icon: Shield, label: "Security", roles: ['Admin', 'Security Staff'], entities: ['Hotel', 'Lodge']},
-    { href: "/reporting", icon: LineChart, label: "Analytics", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
-    { href: "/integrations", icon: Plug, label: "Integrations", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
+    { href: "/reporting", icon: LineChart, label: "Analytics", roles: ['Admin', 'Finance Manager', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+    { href: "/integrations", icon: Plug, label: "Integrations", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
 ];
 
 
@@ -85,9 +97,12 @@ export function AppSidebar() {
     if (!userRole || !organisationType || !link.entities.includes(organisationType)) {
       return false;
     }
-    if (organisationType === 'Lodge' && userRole !== 'Admin' && link.href === '/') {
+    
+    // Hide hotel/lodge specific dashboard for other org types
+    if (organisationType !== 'Hotel' && organisationType !== 'Lodge' && userRole !== 'Admin' && link.href === '/') {
         return false;
     }
+    
     if (userRole === 'Admin') return true;
     return link.roles.includes(userRole);
   }
@@ -108,6 +123,12 @@ export function AppSidebar() {
             if (hasAccess(link)) {
                 const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
                 const isActive = (link.href !== '/' && pathname.startsWith(link.href)) || pathname === link.href;
+                
+                // For restaurant, POS is the default page
+                if (organisationType === 'Restaurant' && link.href === '/restaurant' && pathname === '/') {
+                    return null; // Don't show dashboard link, handled by withAuth redirect
+                }
+
                 return (
                     <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton 

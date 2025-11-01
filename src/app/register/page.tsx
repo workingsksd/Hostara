@@ -16,11 +16,12 @@ import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { createUserProfile } from "@/services/user-service";
 
-type OrganisationType = "Hotel" | "Lodge";
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance';
+type OrganisationType = "Hotel" | "Lodge" | "Restaurant";
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager';
 
 const allRoles: { value: Role, label: string }[] = [
     { value: 'Admin', label: 'Admin (Full Access)' },
+    // Hotel & Lodge
     { value: 'Front Office Staff', label: 'Front Office Staff' },
     { value: 'Housekeeping', label: 'Housekeeping' },
     { value: 'Maintenance Team', label: 'Maintenance Team' },
@@ -29,11 +30,14 @@ const allRoles: { value: Role, label: string }[] = [
     { value: 'Finance Manager', label: 'Finance Manager' },
     { value: 'Security Staff', label: 'Security Staff' },
     { value: 'Guest', label: 'Guest' },
-    // Lodge specific roles can be mapped from these
+    // Lodge specific mapping
     { value: 'Receptionist', label: 'Receptionist' },
     { value: 'Finance', label: 'Finance Officer' },
+    // Restaurant specific
+    { value: 'Restaurant Manager', label: 'Restaurant Manager' },
+    { value: 'Waiter', label: 'Waiter' },
+    { value: 'Chef', label: 'Chef' },
 ];
-
 
 function RegisterPage() {
   const router = useRouter();
@@ -50,7 +54,7 @@ function RegisterPage() {
   const availableRoles = useMemo(() => {
     switch (organisationType) {
         case 'Hotel':
-            return allRoles.filter(r => !['Receptionist', 'Finance'].includes(r.value));
+            return allRoles.filter(r => !['Receptionist', 'Finance', 'Waiter', 'Chef', 'Restaurant Manager'].includes(r.value));
         case 'Lodge':
             return [
                 { value: 'Admin', label: 'Manager (Admin)' },
@@ -59,6 +63,13 @@ function RegisterPage() {
                 { value: 'Finance', label: 'Finance Officer' },
                 { value: 'Guest', label: 'Guest' },
             ];
+        case 'Restaurant':
+             return [
+                { value: 'Admin', label: 'Owner (Admin)' },
+                { value: 'Restaurant Manager', label: 'Restaurant Manager' },
+                { value: 'Chef', label: 'Chef' },
+                { value: 'Waiter', label: 'Waiter' },
+             ];
         default:
             return [];
     }
@@ -111,7 +122,7 @@ function RegisterPage() {
     }
   };
 
-  const organisationTypes: OrganisationType[] = ["Hotel", "Lodge"];
+  const organisationTypes: OrganisationType[] = ["Hotel", "Lodge", "Restaurant"];
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">

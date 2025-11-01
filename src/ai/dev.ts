@@ -4,3 +4,4 @@ config();
 
 import '@/ai/flows/kyc-ocr-flow.ts';
 import '@/ai/flows/guest-preference-flow.ts';
+import '@/ai/flows/predictive-inventory-flow.ts';

@@ -15,7 +15,7 @@ import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 
-type EntityType = "Hotel" | "Lodge";
+type EntityType = "Hotel" | "Lodge" | "Restaurant";
 
 function LoginPage() {
   const router = useRouter();
@@ -36,7 +36,7 @@ function LoginPage() {
     }
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem("entityType", entityType);
+      localStorage.setItem("organisationType", entityType);
       router.push("/");
     } catch (error: any) {
       toast({
@@ -59,7 +59,7 @@ function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      localStorage.setItem("entityType", entityType);
+      localStorage.setItem("organisationType", entityType);
       router.push("/");
     } catch (error: any) {
       toast({
@@ -72,7 +72,7 @@ function LoginPage() {
     }
   };
   
-  const entityTypes: EntityType[] = ["Hotel", "Lodge"];
+  const entityTypes: EntityType[] = ["Hotel", "Lodge", "Restaurant"];
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">
