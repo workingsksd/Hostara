@@ -35,7 +35,7 @@
           "enum": ["Hotel", "Lodge", "Restaurant"]
         }
       },
-      "required": ["uid", "email", "role", "organisationType"]
+      "required": ["uid", "email", "role", "organisationType", "displayName"]
     },
     "Booking": {
       "title": "Booking",
@@ -131,3 +131,5 @@
     }
   }
 }
+
+    

@@ -14,6 +14,7 @@ import withAuth from "@/components/withAuth";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { createUserProfile } from "@/services/user-service";
 
 type OrganisationType = "Hotel" | "Lodge" | "Restaurant";
 type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Restaurant Staff' | 'Chef/Kitchen' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Chef' | 'Staff';
@@ -41,13 +42,13 @@ const allRoles: { value: Role, label: string }[] = [
 
 function RegisterPage() {
   const router = useRouter();
-  const { auth } = useFirebase();
+  const { auth, firestore } = useFirebase();
   const { toast } = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState<Role | ''>('');
   const [organisationType, setOrganisationType] = useState<OrganisationType>("Hotel");
   const [loading, setLoading] = useState(false);
 
@@ -84,18 +85,28 @@ function RegisterPage() {
       });
       return;
     }
-    setLoading(true);
-    if (!auth) {
+    if (!auth || !firestore) {
       toast({ variant: "destructive", title: "Firebase not initialized." });
       setLoading(false);
       return;
     }
+    
+    setLoading(true);
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       
-      // In a real app, you'd likely save the role and organisationType to Firestore
-      // For this example, we'll use localStorage
+      await createUserProfile(firestore, userCredential.user.uid, {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email!,
+        displayName: name,
+        role: role as Role, // Cast because we validated it's not ''
+        organisationType: organisationType,
+        photoURL: userCredential.user.photoURL || '',
+      });
+
+      // We still use localStorage for quick client-side access
       localStorage.setItem("userRole", role);
       localStorage.setItem("organisationType", organisationType);
       
@@ -122,6 +133,7 @@ function RegisterPage() {
                 <Button
                     key={type}
                     variant="ghost"
+                    type="button"
                     onClick={() => {
                         setOrganisationType(type);
                         setRole(''); // Reset role when entity type changes
@@ -160,7 +172,7 @@ function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Your Role</Label>
-                <Select onValueChange={setRole} value={role} required>
+                <Select onValueChange={(value) => setRole(value as Role)} value={role} required>
                   <SelectTrigger id="role" className="bg-background/50">
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
@@ -187,3 +199,5 @@ function RegisterPage() {
 }
 
 export default withAuth(RegisterPage);
+
+    
