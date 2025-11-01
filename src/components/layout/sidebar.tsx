@@ -47,7 +47,7 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+    { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['Admin'], entities: ['Hotel', 'Lodge']},
     { 
       href: "/restaurant", 
       icon: Utensils, 
@@ -94,16 +94,22 @@ export function AppSidebar() {
   }, []);
 
   const hasAccess = (link: NavLink) => {
-    if (!userRole || !organisationType || !link.entities.includes(organisationType)) {
+    // Basic requirement: user must have a role and be in an organization
+    if (!userRole || !organisationType) {
       return false;
     }
-    
-    // Hide hotel/lodge specific dashboard for other org types if they aren't admin
-    if (organisationType === 'Restaurant' && link.href === '/' && userRole !== 'Admin') {
-        return false;
+
+    // Check if the link is applicable to the user's organization type
+    if (!link.entities.includes(organisationType)) {
+      return false;
     }
-    
-    if (userRole === 'Admin') return true;
+
+    // Admin role has universal access to their organization's applicable links
+    if (userRole === 'Admin') {
+      return true;
+    }
+
+    // For non-admin roles, check if their role is explicitly listed in the link's roles
     return link.roles.includes(userRole);
   }
 
@@ -120,14 +126,19 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           {isClient && navLinks.map(link => {
+            // Special case for restaurant dashboard: only show to restaurant orgs
+            if (organisationType !== 'Restaurant' && link.href === '/restaurant') {
+              return null;
+            }
+            // Special case for hotel/lodge dashboard: hide from restaurant orgs
+            if (organisationType === 'Restaurant' && link.href === '/') {
+              return null;
+            }
+
             if (hasAccess(link)) {
                 const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
                 const isActive = (link.href !== '/' && pathname.startsWith(link.href)) || pathname === link.href;
                 
-                if (organisationType === 'Restaurant' && link.href === '/') {
-                  if(userRole !== 'Admin') return null;
-                }
-
                 return (
                     <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton 
