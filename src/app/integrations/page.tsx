@@ -68,7 +68,7 @@ function IntegrationsPage() {
     <AppLayout>
       <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline mb-6">Integration Hub</h1>
-        <Card className="bg-card/60 backdrop-blur-sm border border-border/20">
+        <Card className="bg-card/60 backdrop-blur-sm border-border/20">
           <CardHeader>
             <CardTitle>API Connections & OTA Management</CardTitle>
              <CardDescription>
