@@ -105,7 +105,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     }, [router, pathname, user, loading]);
 
 
-    if (loading || !user && !(pathname.startsWith('/login') || pathname.startsWith('/register'))) {
+    if (loading || (!user && !(pathname.startsWith('/login') || pathname.startsWith('/register')))) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="text-lg font-semibold">Loading...</div>

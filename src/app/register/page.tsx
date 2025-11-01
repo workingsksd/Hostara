@@ -32,9 +32,9 @@ const allRoles: { value: Role, label: string }[] = [
     { value: 'Finance Manager', label: 'Finance Manager' },
     { value: 'Security Staff', label: 'Security Staff' },
     { value: 'Guest', label: 'Guest' },
-    // Lodge specific mapping
-    { value: 'Receptionist', label: 'Receptionist' },
-    { value: 'Finance', label: 'Finance Officer' },
+    // Lodge specific mapping - reusing for simplicity
+    { value: 'Receptionist', label: 'Receptionist' }, // Mapped from Front Office Staff
+    { value: 'Finance', label: 'Finance Officer' }, // Mapped from Finance Manager
     // Restaurant specific
     { value: 'Restaurant Manager', label: 'Restaurant Manager' },
     { value: 'Waiter', label: 'Waiter' },
