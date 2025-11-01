@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -53,47 +54,51 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 
     useEffect(() => {
       if (loading) {
-        setIsRenderAllowed(false);
         return; // Wait until user status is resolved
       }
 
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-      const userRole = localStorage.getItem('userRole') as Role;
-      const organisationType = localStorage.getItem('organisationType');
+      
+      if (!user && !isAuthPage) {
+        // Not logged in and not on an auth page, redirect to login
+        router.replace('/login');
+        return;
+      }
 
-      if (isAuthPage) {
-        if (user) {
-          const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
-          router.replace(defaultRoute || '/');
-        } else {
-            setIsRenderAllowed(true);
-        }
-      } else {
-        if (!user) {
-          router.replace('/login');
-          return;
-        } 
+      if (user) {
+         if (isAuthPage) {
+            // Logged in user on an auth page, redirect to their default route
+            const userRole = localStorage.getItem('userRole') as Role;
+            const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
+            router.replace(defaultRoute);
+            return;
+         }
+
+        // Logged-in user on a protected page, check permissions
+        const userRole = localStorage.getItem('userRole') as Role;
+        const organisationType = localStorage.getItem('organisationType');
         
-        if (organisationType === 'Lodge' && userRole && userRole !== 'Admin' && pathname === '/') {
-            const defaultRoute = defaultRoutes[userRole] || '/';
+        // Specific rule for Lodge non-admins on dashboard
+        if (organisationType === 'Lodge' && userRole !== 'Admin' && pathname === '/') {
+            const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
             router.replace(defaultRoute);
             return;
         }
 
-        const allowedRoles = pagePermissions[pathname] || ['Admin']; // Default to Admin only
-        if (!userRole || !allowedRoles.includes(userRole)) {
+        const allowedRoles = pagePermissions[pathname] || ['Admin'];
+        if (userRole && allowedRoles.includes(userRole)) {
+            setIsRenderAllowed(true);
+        } else {
             console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'.`);
             const defaultRoute = userRole ? defaultRoutes[userRole] : '/login';
-            // Safety check for defaultRoute
-            if (defaultRoute) {
-                router.replace(defaultRoute);
-            } else {
-                router.replace('/login');
-            }
-        } else {
-            setIsRenderAllowed(true);
+            router.replace(defaultRoute);
+            return;
         }
+      } else {
+        // Not logged in, but on an auth page, so allow render
+        setIsRenderAllowed(true);
       }
+
     }, [router, pathname, user, loading]);
 
     if (loading || !isRenderAllowed) {
