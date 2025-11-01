@@ -19,16 +19,16 @@ const guestAnalysisPrompt = ai.definePrompt({
   name: 'guestAnalysisPrompt',
   input: {schema: GuestProfileAnalysisInputSchema},
   output: {schema: GuestProfileAnalysisOutputSchema},
-  prompt: `You are a CRM expert for a luxury hotel. Analyze the provided guest data to understand their preferences and create a personalized marketing offer.
+  prompt: `You are a CRM expert for a luxury hospitality brand. Analyze the provided guest data to understand their preferences and create a personalized marketing offer.
 
   Guest Name: {{{guestName}}}
-  Stay History: {{{stayHistory}}}
-  Transaction History: {{{transactionHistory}}}
+  Stay History (JSON): {{{stayHistory}}}
+  Transaction History (JSON): {{{transactionHistory}}}
 
   Based on this data:
-  1.  Summarize the guest's spending habits and preferences concisely.
-  2.  Create a "Next Best Offer" that is highly specific and likely to entice them to book again. The offer should be a single, actionable sentence.
-  3.  Predict their most likely next booking pattern (e.g., trip type and timing).
+  1.  Summarize the guest's spending habits and preferences concisely (e.g., "Prefers suites, high spender on in-room dining, frequently books weekend trips").
+  2.  Create a "Next Best Offer" that is highly specific, time-bound, and likely to entice them to book again (e.g., "Enjoy 20% off a Deluxe Suite and a complimentary bottle of wine for your next weekend stay booked within 30 days.").
+  3.  Predict their most likely next booking pattern, including trip type and potential timing (e.g., "Likely to book a short weekend getaway in the next 2-3 months.").
 
   Return the analysis as a JSON object that strictly follows the output schema.
   `,

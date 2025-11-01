@@ -50,11 +50,14 @@ function GuestLoyaltyPage() {
     setAnalysis(prev => ({ ...prev, [guestEmail]: { loading: true, data: null } }));
 
     try {
-        const guestTransactions = transactions.filter(t => t.guest === guest.name);
+        const guestTransactions = transactions.filter(t => {
+            const booking = guest.stayHistory.some(s => s.checkIn <= t.date && s.checkOut >= t.date);
+            return booking;
+        });
 
         const result = await analyzeGuestProfile({
             guestName: guest.name,
-            stayHistory: JSON.stringify(guest.stayHistory),
+            stayHistory: JSON.stringify(guest.stayHistory.map(s => ({ room: s.room, checkIn: s.checkIn }))),
             transactionHistory: JSON.stringify(guestTransactions.map(t => ({ type: t.type, amount: t.amount, date: t.date }))),
         });
 

@@ -68,7 +68,7 @@ const navLinks: NavLink[] = [
     },
     { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge', 'Restaurant']},
     { href: "/revenue", icon: TrendingUp, label: "Revenue", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
-    { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
+    { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
     { href: "/security", icon: Shield, label: "Security", roles: ['Admin', 'Security Staff'], entities: ['Hotel', 'Lodge']},
     { href: "/reporting", icon: LineChart, label: "Analytics", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
     { href: "/integrations", icon: Plug, label: "Integrations", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant'] },

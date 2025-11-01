@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useContext } from 'react';
-import { BookingContext, OrderItem, RestaurantTable } from '@/context/BookingContext';
+import { BookingContext, OrderItem, RestaurantTable, Reservation } from '@/context/BookingContext';
 import withAuth from '@/components/withAuth';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -34,13 +34,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ShoppingCart, X, ChefHat, User, CheckCircle, Clock } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ShoppingCart, X, ChefHat, User, CheckCircle, Clock, CalendarPlus } from 'lucide-react';
 import Image from 'next/image';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetTrigger } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { DatePicker } from '@/components/ui/date-picker';
 
 
 type MenuItem = {
@@ -93,16 +95,26 @@ const tableStatusConfig: { [key in RestaurantTable['status']]: { variant: 'defau
   Reserved: { variant: 'outline', icon: <Clock />, actionLabel: 'Seat Guests', actionIcon: <User /> },
 };
 
+const reservationStatusVariant: { [key in Reservation['status']]: 'default' | 'secondary' | 'destructive' } = {
+    'Pending': 'secondary',
+    'Seated': 'default',
+    'Cancelled': 'destructive',
+}
+
 
 function RestaurantPage() {
   const [menuItems, setMenuItems] = useState(initialMenu);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isReservationFormOpen, setIsReservationFormOpen] = useState(false);
+  const [isSeatingDialogOpen, setIsSeatingDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string>('');
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+
   const { toast } = useToast();
-  const { addOrder, tables, updateTableStatus } = useContext(BookingContext);
+  const { addOrder, tables, updateTableStatus, reservations, addReservation, updateReservationStatus } = useContext(BookingContext);
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -198,9 +210,45 @@ function RestaurantPage() {
       title: `Table ${table.name} is now ${newStatus}`,
     })
   }
+
+  const handleSaveReservation = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    const reservationData = {
+        guestName: formData.get('guestName') as string,
+        guestCount: parseInt(formData.get('guestCount') as string),
+        reservationTime: formData.get('reservationTime') as string,
+    };
+
+    if (!reservationData.reservationTime) {
+        toast({ variant: 'destructive', title: 'Invalid Date', description: 'Please select a reservation date and time.'});
+        return;
+    }
+
+    addReservation(reservationData);
+    toast({ title: 'Reservation Created', description: `Reservation for ${reservationData.guestName} has been recorded.`});
+    setIsReservationFormOpen(false);
+  }
   
+  const handleSeatGuest = (tableId: string) => {
+    if (!selectedReservation) return;
+
+    updateTableStatus(tableId, 'Occupied');
+    updateReservationStatus(selectedReservation.id, 'Seated', tableId);
+
+    toast({
+        title: 'Guest Seated',
+        description: `${selectedReservation.guestName} has been seated at ${tables.find(t => t.id === tableId)?.name}.`
+    });
+
+    setIsSeatingDialogOpen(false);
+    setSelectedReservation(null);
+  }
+
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const occupiedTables = tables.filter(t => t.status === 'Occupied');
+  const availableTables = tables.filter(t => t.status === 'Available');
 
   return (
     <AppLayout>
@@ -280,55 +328,13 @@ function RestaurantPage() {
                 )}
               </SheetContent>
             </Sheet>
-
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openAddDialog}>
-                    <PlusCircle className="mr-2" /> Add Menu Item
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <form onSubmit={handleFormSubmit}>
-                  <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit' : 'Add'} Menu Item</DialogTitle>
-                    <DialogDescription>
-                      Fill out the details for the menu item below.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input id="name" name="name" defaultValue={editingItem?.name} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea id="description" name="description" defaultValue={editingItem?.description} required />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="price">Price (₹)</Label>
-                          <Input id="price" name="price" type="number" defaultValue={editingItem?.price} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="category">Category</Label>
-                          <Input id="category" name="category" defaultValue={editingItem?.category} required />
-                        </div>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>Cancel</Button>
-                    <Button type="submit">Save Item</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-
           </div>
         </div>
 
-        <Tabs defaultValue="tables">
-            <TabsList>
+        <Tabs defaultValue="tables" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="tables">Table Layout</TabsTrigger>
+                <TabsTrigger value="reservations">Reservations</TabsTrigger>
                 <TabsTrigger value="menu">Menu</TabsTrigger>
             </TabsList>
             <TabsContent value="tables">
@@ -357,6 +363,7 @@ function RestaurantPage() {
                                             variant={table.status === 'Occupied' ? 'destructive' : 'default'}
                                             className="w-full"
                                             onClick={() => handleTableStatusChange(table)}
+                                            disabled={table.status === 'Reserved'}
                                         >
                                             {config.actionIcon}
                                             {config.actionLabel}
@@ -368,7 +375,100 @@ function RestaurantPage() {
                     </CardContent>
                 </Card>
             </TabsContent>
+             <TabsContent value="reservations">
+                <Card className="bg-card/60 backdrop-blur-sm border-border/20">
+                    <CardHeader>
+                        <CardTitle className="flex justify-between items-center">
+                            Upcoming Reservations
+                            <Dialog open={isReservationFormOpen} onOpenChange={setIsReservationFormOpen}>
+                                <DialogTrigger asChild>
+                                    <Button><CalendarPlus className="mr-2"/> New Reservation</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <form onSubmit={handleSaveReservation}>
+                                        <DialogHeader>
+                                            <DialogTitle>New Reservation</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-4">
+                                            <Input name="guestName" placeholder="Guest Name" required />
+                                            <Input name="guestCount" type="number" placeholder="Number of Guests" required />
+                                            <DatePicker name="reservationTime" />
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" type="button" onClick={() => setIsReservationFormOpen(false)}>Cancel</Button>
+                                            <Button type="submit">Save Reservation</Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {reservations.map(res => (
+                                <div key={res.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                                    <div>
+                                        <p className="font-bold">{res.guestName} ({res.guestCount} guests)</p>
+                                        <p className="text-sm text-muted-foreground">{format(new Date(res.reservationTime), 'PPP, p')}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={reservationStatusVariant[res.status]}>{res.status}</Badge>
+                                        {res.status === 'Pending' && (
+                                            <Button onClick={() => { setSelectedReservation(res); setIsSeatingDialogOpen(true); }}>
+                                                Seat Guest
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
             <TabsContent value="menu">
+                <div className="flex justify-end mb-4">
+                    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <DialogTrigger asChild>
+                            <Button onClick={openAddDialog}>
+                                <PlusCircle className="mr-2" /> Add Menu Item
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <form onSubmit={handleFormSubmit}>
+                            <DialogHeader>
+                                <DialogTitle>{editingItem ? 'Edit' : 'Add'} Menu Item</DialogTitle>
+                                <DialogDescription>
+                                Fill out the details for the menu item below.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="space-y-2">
+                                <Label htmlFor="name">Name</Label>
+                                <Input id="name" name="name" defaultValue={editingItem?.name} required />
+                                </div>
+                                <div className="space-y-2">
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea id="description" name="description" defaultValue={editingItem?.description} required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="price">Price (₹)</Label>
+                                    <Input id="price" name="price" type="number" defaultValue={editingItem?.price} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                    <Label htmlFor="category">Category</Label>
+                                    <Input id="category" name="category" defaultValue={editingItem?.category} required />
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                                <Button type="submit">Save Item</Button>
+                            </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {menuItems.map(item => (
                     <Card key={item.id} className="bg-card/60 backdrop-blur-sm border-border/20 overflow-hidden flex flex-col">
@@ -414,6 +514,27 @@ function RestaurantPage() {
             </TabsContent>
         </Tabs>
       </div>
+
+       <Dialog open={isSeatingDialogOpen} onOpenChange={setIsSeatingDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Seat Guest: {selectedReservation?.guestName}</DialogTitle>
+                <DialogDescription>Select an available table to seat the guest.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-3 gap-2 py-4 max-h-60 overflow-y-auto">
+                {availableTables.map(table => (
+                    <Button
+                        key={table.id}
+                        variant="outline"
+                        disabled={table.capacity < (selectedReservation?.guestCount ?? 0)}
+                        onClick={() => handleSeatGuest(table.id)}
+                    >
+                        {table.name} ({table.capacity})
+                    </Button>
+                ))}
+            </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
