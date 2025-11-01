@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 
@@ -49,9 +49,11 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     const router = useRouter();
     const pathname = usePathname();
     const { user, loading } = useUser();
+    const [isRenderAllowed, setIsRenderAllowed] = useState(false);
 
     useEffect(() => {
       if (loading) {
+        setIsRenderAllowed(false);
         return; // Wait until user status is resolved
       }
 
@@ -63,6 +65,8 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         if (user) {
           const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
           router.replace(defaultRoute || '/');
+        } else {
+            setIsRenderAllowed(true);
         }
       } else {
         if (!user) {
@@ -86,11 +90,13 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
             } else {
                 router.replace('/login');
             }
+        } else {
+            setIsRenderAllowed(true);
         }
       }
     }, [router, pathname, user, loading]);
 
-    if (loading) {
+    if (loading || !isRenderAllowed) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
           <p>Loading...</p>
@@ -98,21 +104,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
       );
     }
     
-    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-    if (isAuthPage && !user) {
-        return <WrappedComponent {...props} />;
-    }
-
-    if (!isAuthPage && user) {
-        const userRole = localStorage.getItem('userRole') as Role;
-        const allowedRoles = pagePermissions[pathname] || ['Admin'];
-        if (userRole && allowedRoles.includes(userRole)) {
-          return <WrappedComponent {...props} />;
-        }
-    }
-
-    // Render nothing while redirecting or if access is not yet confirmed.
-    return null;
+    return <WrappedComponent {...props} />;
   };
 
   AuthComponent.displayName = `withAuth(${(WrappedComponent.displayName || WrappedComponent.name || 'Component')})`;
