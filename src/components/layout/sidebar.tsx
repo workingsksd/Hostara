@@ -89,33 +89,25 @@ export function AppSidebar() {
 
   const hasAccess = (link: NavLink) => {
     if (!userRole || !organisationType) {
-      return false; // Don't show anything if role/org isn't loaded yet
+      return false; // Don't show anything if user profile is not loaded
     }
 
-    // 1. Check if the link is relevant for the user's organization type
+    // 1. Check if the link's allowed entities includes the user's organization type
     if (!link.entities.includes(organisationType)) {
       return false;
     }
     
-    // 2. Handle specific dashboard visibility overrides
-    if (organisationType === 'Restaurant' && link.href === '/') {
-        return false; // Hide main dashboard for restaurant staff
-    }
-    if ((organisationType === 'Hotel' || organisationType === 'Lodge') && link.href.startsWith('/restaurant')) {
-        return false; // Hide restaurant routes for hotel/lodge staff
-    }
-
-    // 3. Admin gets access to everything within their organization type
+    // 2. Admin role has access to all links within their entity type
     if (userRole === 'Admin') {
       return true;
     }
 
-    // 4. For non-admins, check if their role is in the link's allowed roles list
+    // 3. For non-admins, check if their role is in the link's allowed roles list
     if (link.roles.includes(userRole)) {
       return true;
     }
 
-    // 5. If none of the above, deny access
+    // 4. Deny access by default
     return false;
   };
 
@@ -137,9 +129,9 @@ export function AppSidebar() {
             }
 
             const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
-            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href) && !isSubActive);
             
-            // Special case for root, so it's not always active
+            // Special case for root, so it's not always active for parent routes
             const finalIsActive = link.href === '/' ? pathname === '/' : isActive;
 
             return (

@@ -6,29 +6,31 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useUser, type AppUser } from '@/firebase';
 
 type Role = AppUser['profile']['role'];
+type OrganisationType = AppUser['profile']['organisationType'];
 
-// Define page permissions based on roles
-const pagePermissions: { [key: string]: Role[] } = {
-    '/': ['Admin'],
-    '/guests': ['Admin', 'Front Office Staff', 'Receptionist'],
-    '/guests/kyc': ['Admin', 'Front Office Staff', 'Receptionist'],
-    '/housekeeping': ['Admin', 'Housekeeping'],
-    '/inventory': ['Admin', 'Inventory Manager', 'Restaurant Manager'],
-    '/staff': ['Admin', 'HR Manager'],
-    '/staff/schedule': ['Admin', 'HR Manager'],
-    '/staff/attendance': ['Admin', 'HR Manager'],
-    '/billing': ['Admin', 'Finance Manager', 'Finance'],
-    '/revenue': ['Admin', 'Finance Manager'],
-    '/reporting': ['Admin', 'Finance Manager', 'Restaurant Manager'],
-    '/integrations': ['Admin', 'Restaurant Manager'],
-    '/security': ['Admin', 'Security Staff'],
-    '/guest-portal': ['Admin'],
-    '/restaurant': ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'],
-    '/restaurant/orders': ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'],
+// Define page permissions based on roles and entities
+const pagePermissions: { [key: string]: { roles: Role[], entities: OrganisationType[] } } = {
+    '/': { roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
+    '/restaurant': { roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant'] },
+    '/restaurant/orders': { roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant'] },
+    '/guests': { roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge'] },
+    '/guests/kyc': { roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge'] },
+    '/housekeeping': { roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge'] },
+    '/inventory': { roles: ['Admin', 'Inventory Manager', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    '/staff': { roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    '/staff/schedule': { roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    '/staff/attendance': { roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    '/billing': { roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge'] },
+    '/revenue': { roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge'] },
+    '/guest-portal': { roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
+    '/security': { roles: ['Admin', 'Security Staff'], entities: ['Hotel', 'Lodge'] },
+    '/reporting': { roles: ['Admin', 'Finance Manager', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    '/integrations': { roles: ['Admin', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
 };
 
+
 const defaultRoutes: { [key in Exclude<Role, null | undefined>]: string } = {
-    'Admin': '/',
+    'Admin': '/', // Default for Admin, will be overridden by org type below
     'Front Office Staff': '/guests',
     'Housekeeping': '/housekeeping',
     'Maintenance Team': '/staff',
@@ -39,7 +41,6 @@ const defaultRoutes: { [key in Exclude<Role, null | undefined>]: string } = {
     'Guest': '/guest-portal',
     'Receptionist': '/guests',
     'Finance': '/billing',
-    // Restaurant roles
     'Restaurant Manager': '/restaurant',
     'Chef': '/restaurant/orders',
     'Waiter': '/restaurant',
@@ -69,7 +70,10 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
       const userRole = user.profile.role;
       const organisationType = user.profile.organisationType;
 
-      const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
+      let defaultRoute = userRole ? defaultRoutes[userRole] : '/';
+      if (userRole === 'Admin') {
+          defaultRoute = organisationType === 'Restaurant' ? '/restaurant' : '/';
+      }
 
       if (isAuthPage) {
         // If logged-in user is on an auth page, redirect them away
@@ -77,28 +81,21 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         return;
       }
       
-      // Special redirect for non-admin restaurant roles from the main dashboard
-      if (organisationType === 'Restaurant' && pathname === '/' && userRole !== 'Admin') {
-          router.replace('/restaurant');
-          return;
-      }
-
-      // Find the base path for permission checking
-      // This allows /staff/schedule to match the /staff permission key
       const basePath = Object.keys(pagePermissions).find(key => key !== '/' && pathname.startsWith(key)) || pathname;
       
-      const allowedRoles = pagePermissions[basePath];
+      const permissions = pagePermissions[basePath];
 
-      // If there's no specific rule for the page, deny access by default unless admin.
-      // Admin can access everything within their org type (handled by sidebar logic).
-      if (!allowedRoles && userRole !== 'Admin') {
+      if (!permissions) {
           console.warn(`No specific permissions set for '${pathname}'. Redirecting to default.`);
           router.replace(defaultRoute);
           return;
       }
 
-      if (allowedRoles && !allowedRoles.includes(userRole) && userRole !== 'Admin') {
-          console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'. Redirecting to '${defaultRoute}'`);
+      const hasEntityAccess = permissions.entities.includes(organisationType);
+      const hasRoleAccess = userRole === 'Admin' || permissions.roles.includes(userRole);
+
+      if (!hasEntityAccess || !hasRoleAccess) {
+          console.warn(`Redirecting: Role '${userRole}' in Org '${organisationType}' does not have access to '${pathname}'. Redirecting to '${defaultRoute}'`);
           router.replace(defaultRoute);
       }
 
@@ -113,7 +110,6 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         );
     }
     
-    // Render the component if all checks pass
     return <WrappedComponent {...props} />;
   };
 
