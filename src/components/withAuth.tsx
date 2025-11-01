@@ -13,7 +13,7 @@ const pagePermissions: { [key: string]: Role[] } = {
     '/guests/kyc': ['Admin', 'Front Office Staff', 'Receptionist'],
     '/housekeeping': ['Admin', 'Housekeeping'],
     '/restaurant': ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'],
-    '/restaurant/orders': ['Admin', 'Chef/Kitchen', 'Chef'],
+    '/restaurant/orders': ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'],
     '/inventory': ['Admin', 'Inventory Manager'],
     '/staff': ['Admin', 'HR Manager', 'Maintenance Team'],
     '/billing': ['Admin', 'Finance Manager', 'Finance'],

@@ -397,7 +397,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
           if (status === 'Completed') {
               addTransaction({
                   guest: o.guestName,
-                  type: 'Room Service',
+                  type: 'Restaurant',
                   amount: o.total,
                   status: 'Pending',
               })

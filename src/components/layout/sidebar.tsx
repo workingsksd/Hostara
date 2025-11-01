@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -49,7 +48,16 @@ const navLinks: NavLink[] = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant']},
     { href: "/guests", icon: Users, label: "Front Office", roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge']},
     { href: "/housekeeping", icon: BedDouble, label: "Housekeeping", roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge']},
-    { href: "/restaurant", icon: UtensilsCrossed, label: "Restaurant & F&B", roles: ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'], entities: ['Hotel', 'Restaurant'] },
+    { 
+        href: "/restaurant", 
+        icon: UtensilsCrossed, 
+        label: "Restaurant & F&B", 
+        roles: ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'], 
+        entities: ['Hotel', 'Restaurant'],
+        subItems: [
+            { href: "/restaurant/orders", icon: UtensilsCrossed, label: "Kitchen Display", roles: ['Admin', 'Chef/Kitchen', 'Chef'], entities: ['Hotel', 'Restaurant'] }
+        ]
+    },
     { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
     { 
         href: "/staff", 
@@ -105,13 +113,13 @@ export function AppSidebar() {
           {isClient && navLinks.map(link => {
             if (hasAccess(link)) {
                 const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
-                const isActive = pathname.startsWith(link.href) && link.href !== '/' || pathname === '/';
+                const isActive = (link.href !== '/' && pathname.startsWith(link.href)) || pathname === link.href;
                 return (
                     <SidebarMenuItem key={link.href}>
                         <SidebarMenuButton 
                           asChild={!link.subItems}
                           tooltip={link.label} 
-                          isActive={isActive || isSubActive}
+                          isActive={isActive}
                           >
                           <Link href={link.href}>
                               <link.icon />
