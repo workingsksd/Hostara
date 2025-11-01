@@ -1,6 +1,9 @@
 
 import { doc, setDoc, getDoc, Firestore } from 'firebase/firestore';
 import type { UserProfile } from '@/context/BookingContext';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+
 
 /**
  * Creates or updates a user's profile document in Firestore.
@@ -8,9 +11,19 @@ import type { UserProfile } from '@/context/BookingContext';
  * @param uid - The user's unique ID.
  * @param data - The user profile data to save.
  */
-export async function createUserProfile(firestore: Firestore, uid: string, data: UserProfile) {
+export function createUserProfile(firestore: Firestore, uid: string, data: UserProfile) {
     const userProfileRef = doc(firestore, 'users', uid);
-    await setDoc(userProfileRef, data, { merge: true });
+    
+    setDoc(userProfileRef, data, { merge: true })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: userProfileRef.path,
+          operation: 'create',
+          requestResourceData: data,
+        } satisfies SecurityRuleContext);
+
+        errorEmitter.emit('permission-error', permissionError);
+      });
 }
 
 /**
