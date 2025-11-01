@@ -108,12 +108,14 @@ function RegisterPage() {
         photoURL: userCredential.user.photoURL || '',
       };
       
-      await createUserProfile(firestore, userCredential.user.uid, userProfileData);
+      // This function now correctly handles errors
+      createUserProfile(firestore, userCredential.user.uid, userProfileData);
 
       toast({ title: "Registration Successful", description: "Please log in with your new account." });
       
       router.push("/login");
     } catch (error: any) {
+      // This will catch auth errors, while Firestore errors are handled by the emitter
       toast({
         variant: "destructive",
         title: "Registration Failed",

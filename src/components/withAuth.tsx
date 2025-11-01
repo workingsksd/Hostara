@@ -110,6 +110,15 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         );
     }
     
+    // If the user's profile is loaded and they are on an auth page, don't render the component
+    if (user && (pathname.startsWith('/login') || pathname.startsWith('/register'))) {
+        return (
+             <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="text-lg font-semibold">Redirecting...</div>
+            </div>
+        );
+    }
+
     return <WrappedComponent {...props} />;
   };
 
