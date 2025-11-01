@@ -25,6 +25,8 @@ import {
   Shield,
   HeartPulse,
   TrendingUp,
+  CalendarDays,
+  Timer,
 } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -62,7 +64,11 @@ const navLinks: NavLink[] = [
         icon: UsersRound, 
         label: "HR Management", 
         roles: ['Admin', 'HR Manager', 'Maintenance Team'], 
-        entities: ['Hotel', 'Lodge', 'Restaurant']
+        entities: ['Hotel', 'Lodge', 'Restaurant'],
+        subItems: [
+             { href: "/staff/schedule", icon: CalendarDays, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+             { href: "/staff/attendance", icon: Timer, label: "Attendance Log", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']}
+        ]
     },
     { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge', 'Restaurant']},
     { href: "/revenue", icon: TrendingUp, label: "Revenue", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
@@ -117,7 +123,7 @@ export function AppSidebar() {
                         <SidebarMenuButton 
                           asChild={!link.subItems}
                           tooltip={link.label} 
-                          isActive={isActive}
+                          isActive={isActive || isSubActive}
                           >
                           <Link href={link.href}>
                               <link.icon />

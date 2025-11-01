@@ -33,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BookingContext, StaffTask } from "@/context/BookingContext";
 import { format, formatDistanceToNow } from "date-fns";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useUser } from "@/firebase";
 
 type StaffMember = {
   id: string;
@@ -95,74 +96,71 @@ const nextTaskStatus: { [key in StaffTask['status']]?: StaffTask['status'] } = {
 };
 
 function StaffPage() {
-  const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
+  const { user } = useUser();
+  const { staff: staffFromContext, tasks, addTask, updateTaskStatus, attendanceLog, clockIn, clockOut } = useContext(BookingContext);
+  
   const [isAddStaffDialogOpen, setIsAddStaffDialogOpen] = useState(false);
   const [isAssignTaskDialogOpen, setIsAssignTaskDialogOpen] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { tasks, addTask, updateTaskStatus } = useContext(BookingContext);
 
   const handleAddStaff = (e: React.FormEvent<HTMLFormElement>) => {
+    // This is a demo. In a real app, you would add the staff to the context.
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newStaffMember: StaffMember = {
-      id: `staff-${Date.now()}`,
-      name: formData.get('name') as string,
-      role: formData.get('role') as string,
-      shift: formData.get('shift') as string,
-      status: "Off Duty", // Default status for new staff
-      avatar: `https://picsum.photos/seed/staff${Date.now()}/40/40`,
-    };
-
-    setStaff(prev => [newStaffMember, ...prev]);
-    setIsAddStaffDialogOpen(false);
     toast({
-      title: 'Staff Member Added',
-      description: `${newStaffMember.name} has been added to the team.`,
+      title: 'Staff Member Added (Demo)',
+      description: `${formData.get('name')} has been added to the team.`,
     });
+    setIsAddStaffDialogOpen(false);
   };
   
   const handleToggleStatus = (staffId: string) => {
-    setStaff(prevStaff => {
-        const updatedStaff = prevStaff.map(member => {
-            if (member.id === staffId) {
-                const newStatus = member.status === "On Duty" ? "Off Duty" : "On Duty";
-                toast({
-                    title: `${member.name}'s status updated`,
-                    description: `They are now ${newStatus}.`,
-                });
-                return { ...member, status: newStatus };
-            }
-            return member;
+    const staffMember = staffFromContext.find(s => s.id === staffId);
+    if (!staffMember) return;
+    
+    const attendanceRecord = attendanceLog.find(a => a.staffId === staffId && !a.clockOutTime);
+
+    if (attendanceRecord) {
+        clockOut(attendanceRecord.id);
+        toast({
+            title: `${staffMember.name}'s status updated`,
+            description: `They are now Off Duty.`,
         });
-        return updatedStaff;
-    });
+    } else {
+        clockIn(staffId);
+        toast({
+            title: `${staffMember.name}'s status updated`,
+            description: `They are now On Duty.`,
+        });
+    }
   };
 
-  const handleOpenAssignTask = (staffMember: StaffMember) => {
-    setSelectedStaff(staffMember);
+  const handleOpenAssignTask = (staffId: string) => {
+    setSelectedStaffId(staffId);
     setIsAssignTaskDialogOpen(true);
   }
 
   const handleAssignTask = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedStaff) return;
+    if (!selectedStaffId) return;
 
     const formData = new FormData(e.currentTarget);
     const dueDate = formData.get('dueDate');
+    const selectedStaff = staffFromContext.find(s => s.id === selectedStaffId);
 
     const newTask: Omit<StaffTask, 'id' | 'status'> = {
       title: formData.get('title') as string,
-      assignedToId: selectedStaff.id,
+      assignedToId: selectedStaffId,
       dueDate: dueDate ? format(new Date(dueDate as string), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
     };
     
     addTask(newTask);
     setIsAssignTaskDialogOpen(false);
-    setSelectedStaff(null);
+    setSelectedStaffId(null);
     toast({
       title: 'Task Assigned',
-      description: `"${newTask.title}" assigned to ${selectedStaff.name}.`
+      description: `"${newTask.title}" assigned to ${selectedStaff?.name}.`
     });
   };
   
@@ -244,8 +242,11 @@ function StaffPage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {staff.map((member) => {
+              {staffFromContext.map((member) => {
                 const memberTasks = tasks.filter(t => t.assignedToId === member.id && t.status !== 'Completed');
+                const isOnDuty = attendanceLog.some(a => a.staffId === member.id && !a.clockOutTime);
+                const currentShift = attendanceLog.find(a => a.staffId === member.id && !a.clockOutTime);
+
                 return (
                     <Card key={member.id} className="flex flex-col transform transition-transform duration-300 hover:-translate-y-1">
                     <CardHeader className="flex-row items-start gap-4">
@@ -260,8 +261,12 @@ function StaffPage() {
                     </CardHeader>
                     <CardContent className="flex flex-grow flex-col justify-between">
                          <div className="flex justify-between items-center mb-4">
-                            <Badge variant={onDutyStatusVariant[member.status]}>{member.status}</Badge>
-                            <p className="text-sm text-muted-foreground">{member.shift}</p>
+                            <Badge variant={isOnDuty ? "default" : "secondary"}>
+                                {isOnDuty ? "On Duty" : "Off Duty"}
+                            </Badge>
+                             {currentShift && <p className="text-sm text-muted-foreground font-mono">
+                                In since: {format(new Date(currentShift.clockInTime), 'p')}
+                             </p>}
                         </div>
                         <div className="space-y-2">
                             <h4 className="text-sm font-semibold flex items-center gap-2"><ListTodo className="h-4 w-4"/> Active Tasks</h4>
@@ -293,12 +298,12 @@ function StaffPage() {
                         onClick={() => handleToggleStatus(member.id)}
                         >
                         <Clock className="mr-2" />
-                        Toggle Status
+                        {isOnDuty ? 'Clock Out' : 'Clock In'}
                         </Button>
                          <Button
                         variant="secondary"
                         className="w-full"
-                        onClick={() => handleOpenAssignTask(member)}
+                        onClick={() => handleOpenAssignTask(member.id)}
                         >
                         <PlusCircle className="mr-2" />
                         Assign Task
@@ -316,7 +321,7 @@ function StaffPage() {
         <DialogContent>
             <form onSubmit={handleAssignTask}>
                 <DialogHeader>
-                <DialogTitle>Assign Task to {selectedStaff?.name}</DialogTitle>
+                <DialogTitle>Assign Task to {staffFromContext.find(s => s.id === selectedStaffId)?.name}</DialogTitle>
                 <DialogDescription>
                     Fill in the details for the new task.
                 </DialogDescription>
