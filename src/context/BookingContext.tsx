@@ -4,6 +4,7 @@
 import { createContext, useState, ReactNode, FC, useEffect } from 'react';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { addDays, format, startOfWeek } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 export type Booking = {
   id: string;
@@ -25,11 +26,17 @@ export type MaintenanceTask = {
   priority: 'High' | 'Medium' | 'Low' | 'Critical';
 }
 
+export type RecipeIngredient = {
+  inventoryId: string;
+  quantity: number; 
+};
+
 export type OrderItem = {
     id: string;
     name: string;
     price: number;
     quantity: number;
+    recipe: RecipeIngredient[];
 };
 
 export type Order = {
@@ -216,6 +223,12 @@ const initialInventory: InventoryItem[] = [
     { id: 'inv-3', name: 'Bath Towels', quantity: 200, category: 'Linen', unit: 'pieces' },
     { id: 'inv-4', name: 'Soap Bars', quantity: 500, category: 'Toiletries', unit: 'pieces' },
     { id: 'inv-5', name: 'LED Bulbs', quantity: 50, category: 'Maintenance', unit: 'pieces' },
+    { id: 'inv-6', name: 'Paneer', quantity: 20, category: 'Food', unit: 'kg' },
+    { id: 'inv-7', name: 'Cream', quantity: 10, category: 'Food', unit: 'liters' },
+    { id: 'inv-8', name: 'Garlic', quantity: 5, category: 'Food', unit: 'kg' },
+    { id: 'inv-9', name: 'Spices', quantity: 15, category: 'Food', unit: 'kg' },
+    { id: 'inv-10', name: 'Flour', quantity: 50, category: 'Food', unit: 'kg' },
+    { id: 'inv-11', name: 'Chicken', quantity: 30, category: 'Food', unit: 'kg' },
 ];
 
 const initialStaffMembers: StaffMember[] = [
@@ -329,6 +342,7 @@ export const BookingContext = createContext<BookingContextType>({
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
+  const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(initialMaintenanceTasks);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -434,6 +448,29 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const addOrder = (order: Order) => {
     setOrders(prev => [order, ...prev]);
+    
+    // Deduct stock from inventory
+    setInventory(prevInventory => {
+        const newInventory = [...prevInventory];
+        order.items.forEach(orderItem => {
+            orderItem.recipe.forEach(ingredient => {
+                const itemIndex = newInventory.findIndex(invItem => invItem.id === ingredient.inventoryId);
+                if (itemIndex > -1) {
+                    const totalDeduction = ingredient.quantity * orderItem.quantity;
+                    newInventory[itemIndex].quantity -= totalDeduction;
+
+                    if (newInventory[itemIndex].quantity <= 0) {
+                        toast({
+                            variant: 'destructive',
+                            title: 'Low Stock Alert',
+                            description: `${newInventory[itemIndex].name} is now out of stock.`
+                        });
+                    }
+                }
+            });
+        });
+        return newInventory;
+    });
   };
 
   const updateOrderStatus = (orderId: string, status: Order['status']) => {
@@ -598,3 +635,5 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     </BookingContext.Provider>
   );
 };
+
+  

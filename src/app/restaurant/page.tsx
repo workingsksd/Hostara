@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useContext } from 'react';
-import { BookingContext, OrderItem, RestaurantTable, Reservation } from '@/context/BookingContext';
+import { BookingContext, OrderItem, RestaurantTable, Reservation, InventoryItem } from '@/context/BookingContext';
 import withAuth from '@/components/withAuth';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,11 @@ import { format } from 'date-fns';
 import { DatePicker } from '@/components/ui/date-picker';
 
 
+type RecipeIngredient = {
+  inventoryId: string;
+  quantity: number; // The amount of the ingredient to use
+};
+
 type MenuItem = {
   id: string;
   name: string;
@@ -52,6 +58,7 @@ type MenuItem = {
   price: number;
   category: string;
   imageUrl: string;
+  recipe: RecipeIngredient[];
 };
 
 const initialMenu: MenuItem[] = [
@@ -62,6 +69,12 @@ const initialMenu: MenuItem[] = [
     price: 350,
     category: 'Main Course',
     imageUrl: 'https://picsum.photos/seed/dish1/400/300',
+    recipe: [
+        { inventoryId: 'inv-1', quantity: 0.2 }, // 200g Tomatoes
+        { inventoryId: 'inv-6', quantity: 0.25 }, // 250g Paneer
+        { inventoryId: 'inv-7', quantity: 0.1 }, // 100ml Cream
+        { inventoryId: 'inv-9', quantity: 0.05 }, // 50g Spices
+    ]
   },
   {
     id: 'item-2',
@@ -70,6 +83,10 @@ const initialMenu: MenuItem[] = [
     price: 280,
     category: 'Main Course',
     imageUrl: 'https://picsum.photos/seed/dish2/400/300',
+    recipe: [
+        { inventoryId: 'inv-7', quantity: 0.05 }, // 50ml Cream
+        { inventoryId: 'inv-9', quantity: 0.05 }, // 50g Spices
+    ]
   },
   {
     id: 'item-3',
@@ -78,6 +95,10 @@ const initialMenu: MenuItem[] = [
     price: 70,
     category: 'Breads',
     imageUrl: 'https://picsum.photos/seed/dish3/400/300',
+    recipe: [
+        { inventoryId: 'inv-10', quantity: 0.15 }, // 150g Flour
+        { inventoryId: 'inv-8', quantity: 0.02 }, // 20g Garlic
+    ]
   },
   {
     id: 'item-4',
@@ -86,6 +107,10 @@ const initialMenu: MenuItem[] = [
     price: 450,
     category: 'Appetizer',
     imageUrl: 'https://picsum.photos/seed/dish4/400/300',
+    recipe: [
+        { inventoryId: 'inv-11', quantity: 0.25 }, // 250g Chicken
+        { inventoryId: 'inv-9', quantity: 0.05 }, // 50g Spices
+    ]
   },
 ];
 
@@ -126,6 +151,7 @@ function RestaurantPage() {
       price: parseFloat(formData.get('price') as string),
       category: formData.get('category') as string,
       imageUrl: editingItem?.imageUrl || `https://picsum.photos/seed/new${Date.now()}/400/300`,
+      recipe: editingItem?.recipe || [], // Keep existing recipe or default to empty
     };
 
     if (editingItem) {
@@ -163,7 +189,7 @@ function RestaurantPage() {
           cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
         );
       }
-      return [...prevCart, { id: item.id, name: item.name, price: item.price, quantity: 1 }];
+      return [...prevCart, { id: item.id, name: item.name, price: item.price, quantity: 1, recipe: item.recipe }];
     });
     toast({
       title: 'Added to cart',
@@ -196,7 +222,7 @@ function RestaurantPage() {
       createdAt: new Date().toISOString(),
     };
 
-    addOrder(newOrder);
+    addOrder(newOrder); // This function will now also handle stock deduction
     toast({ title: 'Order Placed!', description: `Order for ${selectedTable.name} has been sent to the kitchen.`});
     setCart([]);
     setIsCartOpen(false);
@@ -540,3 +566,5 @@ function RestaurantPage() {
 }
 
 export default withAuth(RestaurantPage);
+
+  
