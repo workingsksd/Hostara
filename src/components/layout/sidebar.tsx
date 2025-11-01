@@ -77,7 +77,7 @@ const navLinks: NavLink[] = [
     { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
     { href: "/security", icon: Shield, label: "Security", roles: ['Admin', 'Security Staff'], entities: ['Hotel', 'Lodge']},
     { href: "/reporting", icon: LineChart, label: "Analytics", roles: ['Admin', 'Finance Manager', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
-    { href: "/integrations", icon: Plug, label: "Integrations", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/integrations", icon: Plug, label: "Integrations", roles: ['Admin', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
 ];
 
 
@@ -94,22 +94,22 @@ export function AppSidebar() {
   }, []);
 
   const hasAccess = (link: NavLink) => {
-    // Basic requirement: user must have a role and be in an organization
+    // 1. A user must have a role and be in an organization to see any link.
     if (!userRole || !organisationType) {
       return false;
     }
 
-    // Check if the link is applicable to the user's organization type
+    // 2. The link must be applicable to the user's organization type.
     if (!link.entities.includes(organisationType)) {
       return false;
     }
 
-    // Admin role has universal access to their organization's applicable links
+    // 3. Admin role has universal access to their organization's applicable links.
     if (userRole === 'Admin') {
       return true;
     }
 
-    // For non-admin roles, check if their role is explicitly listed in the link's roles
+    // 4. For non-admin roles, check if their role is explicitly listed in the link's roles.
     return link.roles.includes(userRole);
   }
 
@@ -126,51 +126,43 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           {isClient && navLinks.map(link => {
-            // Special case for restaurant dashboard: only show to restaurant orgs
-            if (organisationType !== 'Restaurant' && link.href === '/restaurant') {
-              return null;
-            }
-            // Special case for hotel/lodge dashboard: hide from restaurant orgs
-            if (organisationType === 'Restaurant' && link.href === '/') {
+            if (!hasAccess(link)) {
               return null;
             }
 
-            if (hasAccess(link)) {
-                const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
-                const isActive = (link.href !== '/' && pathname.startsWith(link.href)) || pathname === link.href;
-                
-                return (
-                    <SidebarMenuItem key={link.href}>
-                        <SidebarMenuButton 
-                          asChild={!link.subItems}
-                          tooltip={link.label} 
-                          isActive={isActive || isSubActive}
-                          >
-                          <Link href={link.href}>
-                              <link.icon />
-                              <span>{link.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                        {link.subItems && (
-                          <SidebarMenuSub>
-                              {link.subItems.map(subLink => {
-                                  if(hasAccess(subLink)) {
-                                      return (
-                                          <SidebarMenuSubItem key={subLink.href}>
-                                              <SidebarMenuSubButton asChild isActive={pathname.startsWith(subLink.href)}>
-                                                  <Link href={subLink.href}>{subLink.label}</Link>
-                                              </SidebarMenuSubButton>
-                                          </SidebarMenuSubItem>
-                                      );
-                                  }
-                                  return null;
-                              })}
-                          </SidebarMenuSub>
-                        )}
-                    </SidebarMenuItem>
-                );
-            }
-            return null;
+            const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
+            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            
+            return (
+                <SidebarMenuItem key={link.href}>
+                    <SidebarMenuButton 
+                      asChild={!link.subItems}
+                      tooltip={link.label} 
+                      isActive={isActive || isSubActive}
+                      >
+                      <Link href={link.href}>
+                          <link.icon />
+                          <span>{link.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {link.subItems && (
+                      <SidebarMenuSub>
+                          {link.subItems.map(subLink => {
+                              if(hasAccess(subLink)) {
+                                  return (
+                                      <SidebarMenuSubItem key={subLink.href}>
+                                          <SidebarMenuSubButton asChild isActive={pathname.startsWith(subLink.href)}>
+                                              <Link href={subLink.href}>{subLink.label}</Link>
+                                          </SidebarMenuSubButton>
+                                      </SidebarMenuSubItem>
+                                  );
+                              }
+                              return null;
+                          })}
+                      </SidebarMenuSub>
+                    )}
+                </SidebarMenuItem>
+            );
           })}
         </SidebarMenu>
       </SidebarContent>
