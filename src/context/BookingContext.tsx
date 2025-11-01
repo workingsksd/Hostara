@@ -129,6 +129,13 @@ export type AttendanceRecord = {
     clockOutTime: string | null;
 };
 
+export type RestaurantTable = {
+    id: string;
+    name: string;
+    capacity: number;
+    status: 'Available' | 'Occupied' | 'Reserved';
+}
+
 const initialBookings: Booking[] = [
   {
     id: 'booking-1',
@@ -216,6 +223,17 @@ const initialShifts: Shift[] = [
     { id: 'shift-off', name: 'Off', startTime: '', endTime: '', color: 'bg-gray-200/50 text-gray-800' },
 ];
 
+const initialTables: RestaurantTable[] = [
+    { id: 't1', name: 'Table 1', capacity: 4, status: 'Available' },
+    { id: 't2', name: 'Table 2', capacity: 4, status: 'Occupied' },
+    { id: 't3', name: 'Table 3', capacity: 2, status: 'Available' },
+    { id: 't4', name: 'Table 4', capacity: 6, status: 'Reserved' },
+    { id: 't5', name: 'Table 5', capacity: 4, status: 'Available' },
+    { id: 't6', name: 'Table 6', capacity: 8, status: 'Available' },
+    { id: 'b1', name: 'Booth 1', capacity: 6, status: 'Available' },
+    { id: 'b2', name: 'Booth 2', capacity: 6, status: 'Occupied' },
+];
+
 interface BookingContextType {
   bookings: Booking[];
   addBooking: (booking: Booking) => void;
@@ -248,6 +266,8 @@ interface BookingContextType {
   attendanceLog: AttendanceRecord[];
   clockIn: (staffId: string) => void;
   clockOut: (attendanceId: string) => void;
+  tables: RestaurantTable[];
+  updateTableStatus: (tableId: string, status: RestaurantTable['status']) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -282,6 +302,8 @@ export const BookingContext = createContext<BookingContextType>({
   attendanceLog: [],
   clockIn: () => {},
   clockOut: () => {},
+  tables: [],
+  updateTableStatus: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -298,6 +320,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [schedule, setSchedule] = useState<WeeklySchedule>({});
   const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>([]);
+  const [tables, setTables] = useState<RestaurantTable[]>(initialTables);
 
   // Initialize a mock schedule
   useEffect(() => {
@@ -506,6 +529,10 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
       )
     );
   };
+  
+  const updateTableStatus = (tableId: string, status: RestaurantTable['status']) => {
+    setTables(prev => prev.map(t => t.id === tableId ? { ...t, status } : t));
+  };
 
   return (
     <BookingContext.Provider value={{ 
@@ -518,7 +545,8 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         vendors, addVendor, updateVendor,
         inventory, purchaseOrders, addPurchaseOrder, updatePurchaseOrderStatus, receiveStock,
         staff, shifts, schedule, updateSchedule,
-        attendanceLog, clockIn, clockOut
+        attendanceLog, clockIn, clockOut,
+        tables, updateTableStatus,
     }}>
       {children}
     </BookingContext.Provider>

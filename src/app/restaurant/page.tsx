@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useContext } from 'react';
-import { BookingContext, OrderItem } from '@/context/BookingContext';
+import { BookingContext, OrderItem, RestaurantTable } from '@/context/BookingContext';
 import withAuth from '@/components/withAuth';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -34,11 +34,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, ShoppingCart, X, ChefHat } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ShoppingCart, X, ChefHat, User, CheckCircle, Clock } from 'lucide-react';
 import Image from 'next/image';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetTrigger } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from '@/components/ui/badge';
+
 
 type MenuItem = {
   id: string;
@@ -84,15 +87,22 @@ const initialMenu: MenuItem[] = [
   },
 ];
 
+const tableStatusConfig: { [key in RestaurantTable['status']]: { variant: 'default' | 'secondary' | 'outline', icon: React.ReactNode, actionLabel: string, actionIcon: React.ReactNode } } = {
+  Available: { variant: 'default', icon: <CheckCircle className="text-green-500" />, actionLabel: 'Seat Guests', actionIcon: <User /> },
+  Occupied: { variant: 'secondary', icon: <User />, actionLabel: 'Free Table', actionIcon: <CheckCircle /> },
+  Reserved: { variant: 'outline', icon: <Clock />, actionLabel: 'Seat Guests', actionIcon: <User /> },
+};
+
+
 function RestaurantPage() {
   const [menuItems, setMenuItems] = useState(initialMenu);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [selectedGuestId, setSelectedGuestId] = useState<string>('');
+  const [selectedTableId, setSelectedTableId] = useState<string>('');
   const { toast } = useToast();
-  const { bookings, addOrder } = useContext(BookingContext);
+  const { addOrder, tables, updateTableStatus } = useContext(BookingContext);
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -154,20 +164,20 @@ function RestaurantPage() {
   };
   
   const handlePlaceOrder = () => {
-    if (!selectedGuestId) {
-      toast({ variant: 'destructive', title: 'Please select a guest.' });
+    if (!selectedTableId) {
+      toast({ variant: 'destructive', title: 'Please select a table.' });
       return;
     }
-    const selectedGuest = bookings.find(b => b.id === selectedGuestId);
-    if (!selectedGuest) {
-      toast({ variant: 'destructive', title: 'Guest not found.' });
+    const selectedTable = tables.find(t => t.id === selectedTableId);
+    if (!selectedTable) {
+      toast({ variant: 'destructive', title: 'Table not found.' });
       return;
     }
 
     const newOrder = {
       id: `order-${Date.now()}`,
-      guestId: selectedGuestId,
-      guestName: selectedGuest.guest.name,
+      guestId: selectedTableId, // Using table ID as guest identifier for now
+      guestName: selectedTable.name, // Using table name
       items: cart,
       total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
       status: 'New' as const,
@@ -175,14 +185,22 @@ function RestaurantPage() {
     };
 
     addOrder(newOrder);
-    toast({ title: 'Order Placed!', description: `Order for ${selectedGuest.guest.name} has been sent to the kitchen.`});
+    toast({ title: 'Order Placed!', description: `Order for ${selectedTable.name} has been sent to the kitchen.`});
     setCart([]);
     setIsCartOpen(false);
-    setSelectedGuestId('');
+    setSelectedTableId('');
   };
+
+  const handleTableStatusChange = (table: RestaurantTable) => {
+    const newStatus = table.status === 'Occupied' ? 'Available' : 'Occupied';
+    updateTableStatus(table.id, newStatus);
+    toast({
+      title: `Table ${table.name} is now ${newStatus}`,
+    })
+  }
   
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const checkedInGuests = bookings.filter(b => b.status === 'Checked-in');
+  const occupiedTables = tables.filter(t => t.status === 'Occupied');
 
   return (
     <AppLayout>
@@ -241,15 +259,15 @@ function RestaurantPage() {
                         <span>₹{cartTotal}</span>
                      </div>
                      <div className="space-y-2">
-                        <Label htmlFor="guest-select">Assign to Guest</Label>
-                        <Select onValueChange={setSelectedGuestId} value={selectedGuestId}>
+                        <Label htmlFor="guest-select">Assign to Table</Label>
+                        <Select onValueChange={setSelectedTableId} value={selectedTableId}>
                           <SelectTrigger id="guest-select">
-                            <SelectValue placeholder="Select a guest..." />
+                            <SelectValue placeholder="Select a table..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {checkedInGuests.map(booking => (
-                              <SelectItem key={booking.id} value={booking.id}>
-                                {booking.guest.name} ({booking.room})
+                            {occupiedTables.map(table => (
+                              <SelectItem key={table.id} value={table.id}>
+                                {table.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -308,48 +326,93 @@ function RestaurantPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {menuItems.map(item => (
-            <Card key={item.id} className="bg-card/60 backdrop-blur-sm border-border/20 overflow-hidden flex flex-col">
-              <CardHeader className="p-0 relative">
-                <div className="absolute top-2 right-2 z-10">
-                   <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 border-none text-white">
-                          <MoreHorizontal className="h-4 w-4" />
+        <Tabs defaultValue="tables">
+            <TabsList>
+                <TabsTrigger value="tables">Table Layout</TabsTrigger>
+                <TabsTrigger value="menu">Menu</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tables">
+                <Card className="bg-card/60 backdrop-blur-sm border-border/20">
+                    <CardHeader>
+                        <CardTitle>Digital Table Layout</CardTitle>
+                        <CardDescription>Visual map of table availability and status.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
+                        {tables.map(table => {
+                            const config = tableStatusConfig[table.status];
+                            return (
+                                <Card key={table.id} className="flex flex-col text-center">
+                                    <CardHeader>
+                                        <CardTitle className="flex flex-col items-center gap-2">
+                                            {config.icon}
+                                            {table.name}
+                                        </CardTitle>
+                                        <CardDescription>Seats: {table.capacity}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        <Badge variant={config.variant}>{table.status}</Badge>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button 
+                                            variant={table.status === 'Occupied' ? 'destructive' : 'default'}
+                                            className="w-full"
+                                            onClick={() => handleTableStatusChange(table)}
+                                        >
+                                            {config.actionIcon}
+                                            {config.actionLabel}
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            )
+                        })}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="menu">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {menuItems.map(item => (
+                    <Card key={item.id} className="bg-card/60 backdrop-blur-sm border-border/20 overflow-hidden flex flex-col">
+                    <CardHeader className="p-0 relative">
+                        <div className="absolute top-2 right-2 z-10">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 border-none text-white">
+                                <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleEditClick(item)}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(item.id)}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <div className="relative aspect-video">
+                        <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="food dish" />
+                        </div>
+                        <div className="p-4">
+                            <CardTitle className="font-headline text-xl">{item.name}</CardTitle>
+                            <p className="text-lg font-semibold text-primary mt-1">₹{item.price}</p>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex-grow p-4 pt-0">
+                        <CardDescription>{item.description}</CardDescription>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                        <Button className="w-full" onClick={() => handleAddToCart(item)}>
+                        <PlusCircle className="mr-2" /> Add to Order
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEditClick(item)}>
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(item.id)}>
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    </CardFooter>
+                    </Card>
+                ))}
                 </div>
-                <div className="relative aspect-video">
-                  <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="food dish" />
-                </div>
-                 <div className="p-4">
-                    <CardTitle className="font-headline text-xl">{item.name}</CardTitle>
-                    <p className="text-lg font-semibold text-primary mt-1">₹{item.price}</p>
-                 </div>
-              </CardHeader>
-              <CardContent className="flex-grow p-4 pt-0">
-                <CardDescription>{item.description}</CardDescription>
-              </CardContent>
-              <CardFooter className="p-4 pt-0">
-                 <Button className="w-full" onClick={() => handleAddToCart(item)}>
-                  <PlusCircle className="mr-2" /> Add to Order
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+            </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
