@@ -36,7 +36,7 @@ const categoryIcons: { [key in MenuItem['category']]: React.ReactNode } = {
 
 
 function RestaurantPOSPage() {
-  const { menu, tables, orders, addOrder } = useContext(BookingContext);
+  const { menu, tables, orders, addOrder, updateOrderStatus } = useContext(BookingContext);
   const { toast } = useToast();
 
   const [selectedTable, setSelectedTable] = useState<RestaurantTable | null>(null);
@@ -92,6 +92,13 @@ function RestaurantPOSPage() {
     setIsOrderDialogOpen(false);
     setCurrentOrderItems([]);
     setSelectedTable(null);
+  }
+
+  const handleFinalizeBill = () => {
+      if (!selectedTable || !selectedTable.orderId) return;
+      updateOrderStatus(selectedTable.orderId, 'Paid');
+      toast({ title: "Bill Finalized", description: `${selectedTable.name} is now available.`});
+      setIsOrderDialogOpen(false);
   }
 
   const totalOrderAmount = currentOrderItems.reduce((acc, orderItem) => {
@@ -200,11 +207,15 @@ function RestaurantPOSPage() {
                     <span>Total</span>
                     <span>₹{totalOrderAmount.toLocaleString()}</span>
                  </div>
-                <DialogFooter>
+                <DialogFooter className="justify-between">
+                    {selectedTable?.status === 'Billing' ? (
+                        <Button variant="default" onClick={handleFinalizeBill}>Finalize Bill</Button>
+                    ) : (
+                        <Button onClick={handlePlaceOrder} disabled={currentOrderItems.length === 0}>
+                            {selectedTable?.orderId ? 'Update Order' : 'Place Order'}
+                        </Button>
+                    )}
                     <Button variant="outline" onClick={() => setIsOrderDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handlePlaceOrder} disabled={currentOrderItems.length === 0}>
-                        {selectedTable?.orderId ? 'Update Order' : 'Place Order'}
-                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

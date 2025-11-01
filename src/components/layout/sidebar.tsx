@@ -31,11 +31,12 @@ import {
   CookingPot
 } from "lucide-react"
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { AppSidebar as AppSidebarWrapper } from './sidebar-wrapper';
+import { useUser } from "@/firebase";
+import type { UserProfile } from "@/context/BookingContext";
 
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager' | null;
-type OrganisationType = 'Hotel' | 'Lodge' | 'Restaurant' | null;
+type Role = UserProfile['role'];
+type OrganisationType = UserProfile['organisationType'];
 
 type NavLink = {
     href: string;
@@ -54,11 +55,10 @@ const navLinks: NavLink[] = [
       label: "Restaurant POS", 
       roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], 
       entities: ['Restaurant'],
-      subItems: [
-           { href: "/restaurant/orders", icon: CookingPot, label: "Kitchen Display", roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant']},
-      ]
     },
+    { href: "/restaurant/orders", icon: CookingPot, label: "Kitchen Display", roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant']},
     { href: "/guests", icon: Users, label: "Front Office", roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge']},
+    { href: "/guests/kyc", icon: Shield, label: "KYC Scanner", roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge']},
     { href: "/housekeeping", icon: BedDouble, label: "Housekeeping", roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge']},
     { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager', 'Restaurant Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
     { 
@@ -83,18 +83,12 @@ const navLinks: NavLink[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const [userRole, setUserRole] = useState<Role | null>(null);
-  const [organisationType, setOrganisationType] = useState<OrganisationType>(null);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setUserRole(localStorage.getItem("userRole") as Role);
-    setOrganisationType(localStorage.getItem("organisationType") as OrganisationType);
-    setIsClient(true);
-  }, []);
+  const { user } = useUser();
+  const userRole = user?.profile.role;
+  const organisationType = user?.profile.organisationType;
 
   const hasAccess = (link: NavLink) => {
-    if (!isClient || !userRole || !organisationType) {
+    if (!userRole || !organisationType) {
       return false; // Don't show anything if role/org isn't loaded yet
     }
 
@@ -102,13 +96,13 @@ export function AppSidebar() {
     if (!link.entities.includes(organisationType)) {
       return false;
     }
-
+    
     // 2. Handle specific dashboard visibility overrides
     if (organisationType === 'Restaurant' && link.href === '/') {
         return false; // Hide main dashboard for restaurant staff
     }
     if ((organisationType === 'Hotel' || organisationType === 'Lodge') && link.href.startsWith('/restaurant')) {
-        return false; // Hide restaurant POS and sub-routes for hotel/lodge staff
+        return false; // Hide restaurant routes for hotel/lodge staff
     }
 
     // 3. Admin gets access to everything within their organization type
@@ -137,7 +131,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {isClient && navLinks.map(link => {
+          {user && navLinks.map(link => {
             if (!hasAccess(link)) {
               return null;
             }

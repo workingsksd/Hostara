@@ -6,6 +6,15 @@ import { placeholderImages } from '@/lib/placeholder-images';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
+export type UserProfile = {
+    uid: string;
+    email: string;
+    displayName: string;
+    photoURL: string;
+    role: 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager';
+    organisationType: 'Hotel' | 'Lodge' | 'Restaurant';
+};
+
 export type Booking = {
   id: string;
   guest: {
@@ -225,7 +234,7 @@ const initialInventory: InventoryItem[] = [
 ];
 
 const initialStaffMembers: StaffMember[] = [
-    { id: 'user1', name: 'Admin User', role: 'Admin', avatar: placeholderImages.find(p => p.id === "user-avatar-4")?.imageUrl },
+    { id: 'gHZ9n7s2b9X8fJ2kP3s5t8YxVOE2', name: 'Admin User', role: 'Admin', avatar: placeholderImages.find(p => p.id === "user-avatar-4")?.imageUrl },
     { id: 'staff-1', name: 'Maria Garcia', role: 'Head Housekeeper', avatar: placeholderImages.find(p => p.id === "user-avatar-2")?.imageUrl },
     { id: 'staff-2', name: 'Liam Gallagher', role: 'Maintenance Lead', avatar: placeholderImages.find(p => p.id === "user-avatar-3")?.imageUrl },
     { id: 'staff-3', name: 'Chloe Nguyen', role: 'Front Desk', avatar: placeholderImages.find(p => p.id === "user-avatar-1")?.imageUrl },
@@ -594,7 +603,7 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setOrders(prev => prev.map(o => {
         if (o.id === orderId) {
             if (status === 'Served' || status === 'Paid') {
-                setTables(prevTables => prevTables.map(t => t.orderId === orderId ? { ...t, status: 'Billing', orderId: null } : t));
+                setTables(prevTables => prevTables.map(t => t.orderId === orderId ? { ...t, status: 'Available', orderId: null } : t));
             }
             return { ...o, status };
         }

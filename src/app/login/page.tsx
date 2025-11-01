@@ -19,13 +19,12 @@ type EntityType = "Hotel" | "Lodge" | "Restaurant";
 
 function LoginPage() {
   const router = useRouter();
-  const [entityType, setEntityType] = useState<EntityType>("Hotel");
   const { auth } = useFirebase();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -36,8 +35,9 @@ function LoginPage() {
     }
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem("organisationType", entityType);
-      router.push("/");
+      // The withAuth component will handle redirection after user state is updated
+      // No need to set localStorage or push route here
+      toast({ title: "Login Successful", description: "Redirecting to your dashboard..."});
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -58,9 +58,11 @@ function LoginPage() {
     }
     const provider = new GoogleAuthProvider();
     try {
+      // For Google Sign-In, we can't select organization type beforehand.
+      // This is a limitation. A real app might have a post-login step.
+      // For now, we'll let `withAuth` redirect to a default page.
       await signInWithPopup(auth, provider);
-      localStorage.setItem("organisationType", entityType);
-      router.push("/");
+      toast({ title: "Login Successful", description: "Redirecting to your dashboard..."});
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -72,35 +74,14 @@ function LoginPage() {
     }
   };
   
-  const entityTypes: EntityType[] = ["Hotel", "Lodge", "Restaurant"];
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">
       <Card className="w-full max-w-md bg-card/60 backdrop-blur-lg border-border/20 shadow-2xl shadow-primary/10">
-        <div className="p-6 pb-4">
-            <div className="flex w-full rounded-md bg-muted/50 p-1">
-                {entityTypes.map((type) => (
-                <Button
-                    key={type}
-                    variant="ghost"
-                    onClick={() => setEntityType(type)}
-                    className={cn(
-                    "w-full transition-all duration-200",
-                    entityType === type
-                        ? "bg-background shadow-sm text-foreground"
-                        : "bg-transparent text-muted-foreground hover:bg-background/50"
-                    )}
-                >
-                    {type}
-                </Button>
-                ))}
-            </div>
-        </div>
-        <form onSubmit={handleLogin}>
-          <CardHeader className="text-center pt-0">
+        <CardHeader className="text-center">
             <CardTitle className="text-2xl font-headline">Welcome Back</CardTitle>
-            <CardDescription>Login to your {entityType} dashboard</CardDescription>
-          </CardHeader>
+            <CardDescription>Login to your dashboard</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

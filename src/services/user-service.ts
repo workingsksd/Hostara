@@ -1,15 +1,6 @@
 
-import { doc, setDoc, Firestore } from 'firebase/firestore';
-
-// A type representing the user profile data we'll store in Firestore
-type UserProfile = {
-    uid: string;
-    email: string;
-    displayName: string;
-    photoURL?: string;
-    role: string;
-    organisationType: string;
-}
+import { doc, setDoc, getDoc, Firestore } from 'firebase/firestore';
+import type { UserProfile } from '@/context/BookingContext';
 
 /**
  * Creates or updates a user's profile document in Firestore.
@@ -22,4 +13,20 @@ export async function createUserProfile(firestore: Firestore, uid: string, data:
     await setDoc(userProfileRef, data, { merge: true });
 }
 
-    
+/**
+ * Fetches a user's profile from Firestore.
+ * @param firestore - The Firestore instance.
+ * @param uid - The user's unique ID.
+ * @returns The user profile data, or null if not found.
+ */
+export async function getUserProfile(firestore: Firestore, uid: string): Promise<UserProfile | null> {
+    const userProfileRef = doc(firestore, 'users', uid);
+    const docSnap = await getDoc(userProfileRef);
+
+    if (docSnap.exists()) {
+        return docSnap.data() as UserProfile;
+    } else {
+        console.warn(`No user profile found for UID: ${uid}`);
+        return null;
+    }
+}

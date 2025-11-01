@@ -27,9 +27,12 @@ import { useRouter } from "next/navigation"
 import { useContext, useEffect, useState } from "react"
 import { BookingContext } from "@/context/BookingContext"
 import { useToast } from "@/hooks/use-toast"
+import { useFirebase } from "@/firebase"
+
 
 export function AppHeader() {
-  const { user, auth } = useUser();
+  const { user, loading } = useUser();
+  const { auth } = useFirebase();
   const { clockIn, clockOut, attendanceLog } = useContext(BookingContext);
   const { toast } = useToast();
   const router = useRouter();
@@ -37,13 +40,14 @@ export function AppHeader() {
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
 
-  const currentUserAttendance = user ? attendanceLog.find(a => a.staffId === user.uid && !a.clockOutTime) : null;
+  const currentUserAttendance = user ? attendanceLog.find(a => a.staffId === user.profile.uid && !a.clockOutTime) : null;
 
   useEffect(() => {
     if (currentUserAttendance) {
       setSessionStartTime(new Date(currentUserAttendance.clockInTime).getTime());
     } else {
       setSessionStartTime(null);
+      setElapsedTime('00:00:00');
     }
   }, [currentUserAttendance]);
 
@@ -67,14 +71,13 @@ export function AppHeader() {
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("entityType");
+    // No longer need to manage localStorage here
     router.push("/login");
   };
 
   const handleClockIn = () => {
     if (!user) return;
-    clockIn(user.uid);
+    clockIn(user.profile.uid);
     toast({
         title: 'Clocked In',
         description: 'Your shift has started.'
@@ -122,13 +125,13 @@ export function AppHeader() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
-              <AvatarFallback>{user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U'}</AvatarFallback>
+              <AvatarImage src={user?.firebaseUser.photoURL || ''} alt={user?.profile.displayName || 'User'} />
+              <AvatarFallback>{user?.profile.displayName?.charAt(0) || user?.firebaseUser.email?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
-          <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
+          <DropdownMenuLabel>{user?.profile.displayName || user?.firebaseUser.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
             <User className="mr-2 h-4 w-4" />

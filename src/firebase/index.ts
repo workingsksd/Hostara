@@ -1,9 +1,8 @@
 
 import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator, type Auth } from 'firebase/auth';
+import { getAuth, type Auth } from 'firebase/auth';
 import {
   getFirestore,
-  connectFirestoreEmulator,
   type Firestore,
 } from 'firebase/firestore';
 
@@ -16,7 +15,7 @@ import {
   useAuth,
 } from './provider';
 import { FirebaseClientProvider } from './client-provider';
-import { useUser } from './auth/use-user';
+import { useUser, type AppUser } from './auth/use-user';
 
 export function initializeFirebase(): {
   app: FirebaseApp;
@@ -28,15 +27,9 @@ export function initializeFirebase(): {
   const auth = getAuth(app);
   const firestore = getFirestore(app);
 
-  if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
-    const host = process.env.NEXT_PUBLIC_EMULATOR_HOST;
-    // Important: Re-route requests from the browser to the emulator
-    // This will only happen in a dev environment
-    connectAuthEmulator(auth, `http://${host}:9099`, {
-      disableWarnings: true,
-    });
-    connectFirestoreEmulator(firestore, host, 8080);
-  }
+  // NOTE: Emulator connection is handled in the Firebase Emulators UI
+  // You can connect to emulators from the Firebase tab in the side panel
+  
   return { app, auth, firestore };
 }
 
@@ -48,4 +41,5 @@ export {
   useFirebaseApp,
   useFirestore,
   useAuth,
+  type AppUser
 };

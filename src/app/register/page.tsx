@@ -15,9 +15,11 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { createUserProfile } from "@/services/user-service";
+import type { UserProfile } from "@/context/BookingContext";
 
-type OrganisationType = "Hotel" | "Lodge" | "Restaurant";
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager';
+
+type OrganisationType = UserProfile['organisationType'];
+type Role = UserProfile['role'];
 
 const allRoles: { value: Role, label: string }[] = [
     { value: 'Admin', label: 'Admin (Full Access)' },
@@ -97,20 +99,20 @@ function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       
-      await createUserProfile(firestore, userCredential.user.uid, {
+      const userProfileData: UserProfile = {
         uid: userCredential.user.uid,
         email: userCredential.user.email!,
         displayName: name,
-        role: role as Role, // Cast because we validated it's not ''
+        role: role,
         organisationType: organisationType,
         photoURL: userCredential.user.photoURL || '',
-      });
-
-      // We still use localStorage for quick client-side access
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("organisationType", organisationType);
+      };
       
-      router.push("/");
+      await createUserProfile(firestore, userCredential.user.uid, userProfileData);
+
+      toast({ title: "Registration Successful", description: "Please log in with your new account." });
+      
+      router.push("/login");
     } catch (error: any) {
       toast({
         variant: "destructive",

@@ -35,55 +35,6 @@ import { format, formatDistanceToNow } from "date-fns";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useUser } from "@/firebase";
 
-type StaffMember = {
-  id: string;
-  name: string;
-  role: string;
-  status: "On Duty" | "Off Duty";
-  avatar: string | undefined;
-  shift: string;
-};
-
-const initialStaff: StaffMember[] = [
-  {
-    id: 'staff-1',
-    name: "Maria Garcia",
-    role: "Head Housekeeper",
-    status: "On Duty",
-    avatar: placeholderImages.find((p) => p.id === "user-avatar-2")?.imageUrl,
-    shift: "7am - 3pm",
-  },
-  {
-    id: 'staff-2',
-    name: "Liam Gallagher",
-    role: "Maintenance Lead",
-    status: "On Duty",
-    avatar: placeholderImages.find((p) => p.id === "user-avatar-3")?.imageUrl,
-    shift: "9am - 5pm",
-  },
-  {
-    id: 'staff-3',
-    name: "Chloe Nguyen",
-    role: "Front Desk",
-    status: "Off Duty",
-    avatar: placeholderImages.find((p) => p.id === "user-avatar-1")?.imageUrl,
-    shift: "3pm - 11pm",
-  },
-  {
-    id: 'staff-4',
-    name: "John Doe",
-    role: "Chef",
-    status: "On Duty",
-    avatar: placeholderImages.find((p) => p.id === "user-avatar-4")?.imageUrl,
-    shift: "12pm - 8pm",
-  },
-];
-
-const onDutyStatusVariant: { [key: string]: 'default' | 'secondary' } = {
-  "On Duty": "default",
-  "Off Duty": "secondary",
-};
-
 const taskStatusVariant: { [key in StaffTask['status']]: 'default' | 'secondary' | 'outline' } = {
     'Pending': 'outline',
     'In Progress': 'secondary',

@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, type AppUser } from '@/firebase';
 
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Waiter' | 'Chef' | 'Restaurant Manager' | null;
+type Role = AppUser['profile']['role'];
 
 // Define page permissions based on roles
 const pagePermissions: { [key: string]: Role[] } = {
@@ -27,7 +27,7 @@ const pagePermissions: { [key: string]: Role[] } = {
     '/restaurant/orders': ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'],
 };
 
-const defaultRoutes: { [key in Exclude<Role, null>]: string } = {
+const defaultRoutes: { [key in Exclude<Role, null | undefined>]: string } = {
     'Admin': '/',
     'Front Office Staff': '/guests',
     'Housekeeping': '/housekeeping',
@@ -66,36 +66,46 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
       }
 
       // User is logged in
-      const userRole = localStorage.getItem('userRole') as Role;
-      const organisationType = localStorage.getItem('organisationType');
+      const userRole = user.profile.role;
+      const organisationType = user.profile.organisationType;
+
       const defaultRoute = userRole ? defaultRoutes[userRole] : '/';
 
       if (isAuthPage) {
+        // If logged-in user is on an auth page, redirect them away
         router.replace(defaultRoute);
         return;
       }
       
       // Special redirect for non-admin restaurant roles from the main dashboard
       if (organisationType === 'Restaurant' && pathname === '/' && userRole !== 'Admin') {
-          router.replace(defaultRoute);
+          router.replace('/restaurant');
           return;
       }
 
       // Find the base path for permission checking
       // This allows /staff/schedule to match the /staff permission key
-      const basePath = Object.keys(pagePermissions).find(key => key !== '/' && pathname.startsWith(key)) || '/';
+      const basePath = Object.keys(pagePermissions).find(key => key !== '/' && pathname.startsWith(key)) || pathname;
       
       const allowedRoles = pagePermissions[basePath];
 
-      if (!userRole || !(allowedRoles?.includes(userRole) || userRole === 'Admin')) {
+      // If there's no specific rule for the page, deny access by default unless admin.
+      // Admin can access everything within their org type (handled by sidebar logic).
+      if (!allowedRoles && userRole !== 'Admin') {
+          console.warn(`No specific permissions set for '${pathname}'. Redirecting to default.`);
+          router.replace(defaultRoute);
+          return;
+      }
+
+      if (allowedRoles && !allowedRoles.includes(userRole) && userRole !== 'Admin') {
           console.warn(`Redirecting: Role '${userRole}' does not have access to '${pathname}'. Redirecting to '${defaultRoute}'`);
           router.replace(defaultRoute);
       }
 
     }, [router, pathname, user, loading]);
 
-    // Show a loading screen while authentication is in progress.
-    if (loading) {
+
+    if (loading || !user && !(pathname.startsWith('/login') || pathname.startsWith('/register'))) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="text-lg font-semibold">Loading...</div>
@@ -103,27 +113,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         );
     }
     
-    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
-
-    // If user is not logged in and not on an auth page, we are redirecting, so show loading.
-    if (!user && !isAuthPage) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-background">
-                <div className="text-lg font-semibold">Loading...</div>
-            </div>
-        );
-    }
-
-    // If user is logged in and on an auth page, we are redirecting, so show loading.
-    if (user && isAuthPage) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-background">
-                <div className="text-lg font-semibold">Loading...</div>
-            </div>
-        );
-    }
-    
-    // If all checks pass, render the requested component.
+    // Render the component if all checks pass
     return <WrappedComponent {...props} />;
   };
 

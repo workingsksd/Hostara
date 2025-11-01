@@ -12,6 +12,7 @@ import { BookingsChart } from "@/components/dashboard/bookings-chart";
 import { AppLayout } from "@/components/layout/app-layout";
 import { BookingContext } from "@/context/BookingContext";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/firebase";
 
 
 const recentBookings = [
@@ -43,10 +44,11 @@ const recentBookings = [
 
 
 function DashboardPage() {
-  const { maintenanceTasks, orders, tables } = useContext(BookingContext);
+  const { maintenanceTasks } = useContext(BookingContext);
   const router = useRouter();
+  const { user } = useUser();
   
-  const organisationType = typeof window !== 'undefined' ? localStorage.getItem('organisationType') : null;
+  const organisationType = user?.profile.organisationType;
 
   if (organisationType === 'Restaurant') {
     // Redirect to the restaurant page if the user is in a restaurant org
