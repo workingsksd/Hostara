@@ -15,7 +15,7 @@ import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 
-type EntityType = "Hotel" | "Lodge" | "Restaurant";
+type EntityType = "Hotel" | "Lodge";
 
 function LoginPage() {
   const router = useRouter();
@@ -72,7 +72,7 @@ function LoginPage() {
     }
   };
   
-  const entityTypes: EntityType[] = ["Hotel", "Lodge", "Restaurant"];
+  const entityTypes: EntityType[] = ["Hotel", "Lodge"];
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">

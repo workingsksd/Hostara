@@ -5,12 +5,11 @@ import { useState, useContext } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plug, RefreshCw, Loader2, AlertTriangle, Link2, ShoppingBasket } from "lucide-react";
+import { Plug, RefreshCw, Loader2, AlertTriangle, Link2 } from "lucide-react";
 import withAuth from "@/components/withAuth";
 import { AppLayout } from "@/components/layout/app-layout";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import { BookingContext } from "@/context/BookingContext";
 
 type IntegrationStatus = "Connected" | "Inactive" | "Error" | "Syncing";
 
@@ -38,7 +37,6 @@ const statusConfig: { [key in IntegrationStatus]: { variant: 'default' | 'second
 
 function IntegrationsPage() {
   const [integrations, setIntegrations] = useState<Integration[]>(initialIntegrations);
-  const { addExternalOrder } = useContext(BookingContext);
   const { toast } = useToast();
 
   const handleSync = (name: string) => {
@@ -65,22 +63,6 @@ function IntegrationsPage() {
         }
     }, 2000);
   };
-  
-  const handleSimulateOrder = (platformName: string) => {
-    // A sample order for simulation purposes
-    const sampleOrderItems = [
-      { id: 'item-1', name: 'Paneer Butter Masala', price: 350, quantity: 2, recipe: [{ inventoryId: 'inv-1', quantity: 0.2 }, { inventoryId: 'inv-6', quantity: 0.25 }] },
-      { id: 'item-3', name: 'Garlic Naan', price: 70, quantity: 4, recipe: [{ inventoryId: 'inv-10', quantity: 0.15 }, { inventoryId: 'inv-8', quantity: 0.02 }] },
-    ];
-    
-    addExternalOrder(platformName, sampleOrderItems);
-
-    toast({
-      title: 'Simulated Order Received',
-      description: `A new order from ${platformName} has been sent to the KDS.`,
-      className: "bg-blue-500 text-white",
-    });
-  }
     
   return (
     <AppLayout>
@@ -127,15 +109,6 @@ function IntegrationsPage() {
                                         <><RefreshCw className="mr-2" /> Sync Now</>
                                     )}
                                 </Button>
-                                {integration.status === 'Connected' && (
-                                  <Button 
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => handleSimulateOrder(integration.name)}
-                                  >
-                                    <ShoppingBasket className="mr-2" /> Simulate Incoming Order
-                                  </Button>
-                                )}
                             </CardFooter>
                         </Card>
                     )

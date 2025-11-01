@@ -48,7 +48,6 @@ const statusVariant: { [key: string]: 'default' | 'secondary' } = {
 const typeIcon: { [key: string]: React.ReactNode } = {
     'Room': <Bed className="h-4 w-4 text-muted-foreground" />,
     'Lodge': <Bed className="h-4 w-4 text-muted-foreground" />,
-    'Restaurant': <Utensils className="h-4 w-4 text-muted-foreground" />,
     'Room Service': <Utensils className="h-4 w-4 text-muted-foreground" />,
 }
 
@@ -219,7 +218,7 @@ function BillingPage() {
           <CardHeader>
             <CardTitle>Unified Billing System</CardTitle>
             <CardDescription>
-              A centralized log of all financial transactions across rooms, restaurants, and other services.
+              A centralized log of all financial transactions across rooms, and other services.
             </CardDescription>
           </CardHeader>
           <CardContent>

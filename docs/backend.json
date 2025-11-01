@@ -27,12 +27,12 @@
         "role": {
           "type": "string",
           "description": "The user's role in the system.",
-          "enum": ["Admin", "Front Office Staff", "Housekeeping", "Maintenance Team", "Restaurant Staff", "Chef/Kitchen", "Inventory Manager", "HR Manager", "Finance Manager", "Security Staff", "Guest"]
+          "enum": ["Admin", "Front Office Staff", "Housekeeping", "Maintenance Team", "Inventory Manager", "HR Manager", "Finance Manager", "Security Staff", "Guest"]
         },
         "organisationType": {
           "type": "string",
           "description": "The type of organisation the user belongs to.",
-          "enum": ["Hotel", "Lodge", "Restaurant"]
+          "enum": ["Hotel", "Lodge"]
         }
       },
       "required": ["uid", "email", "role", "organisationType", "displayName"]
@@ -82,7 +82,7 @@
         "properties": {
             "name": {"type": "string"},
             "quantity": {"type": "number"},
-            "category": {"type": "string", "enum": ["Food", "Linen", "Toiletries", "Maintenance"]},
+            "category": {"type": "string", "enum": ["Linen", "Toiletries", "Maintenance"]},
             "organisationType": {"type": "string"}
         },
         "required": ["name", "quantity", "category", "organisationType"]
@@ -131,5 +131,3 @@
     }
   }
 }
-
-    

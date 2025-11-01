@@ -159,7 +159,7 @@ function KYCScannerPage() {
         checkIn: format(new Date(), 'yyyy-MM-dd'),
         checkOut: format(new Date(new Date().setDate(new Date().getDate() + 3)), 'yyyy-MM-dd'), // Default 3 day stay
         status: 'Checked-in',
-        type: 'Hotel',
+        type: 'Hotel', // Placeholder type
         room: 'Assigned on check-in', // Placeholder room
     };
     

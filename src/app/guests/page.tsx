@@ -71,6 +71,7 @@ function GuestsPage() {
         checkIn: formData.get('checkin') as string,
         checkOut: formData.get('checkout') as string,
         status: formData.get('status') as Booking['status'],
+        type: formData.get('type') as Booking['type'],
     }
 
     if (!newBookingData.checkIn || !newBookingData.checkOut) {
@@ -89,7 +90,7 @@ function GuestsPage() {
       checkIn: newBookingData.checkIn,
       checkOut: newBookingData.checkOut,
       status: newBookingData.status,
-      type: 'Hotel', // Assuming Hotel for now
+      type: newBookingData.type,
       room: 'Not Assigned',
     };
     addBooking(newBooking);
@@ -200,6 +201,18 @@ function GuestsPage() {
                         <SelectItem value="Confirmed">Confirmed</SelectItem>
                         <SelectItem value="Checked-in">Checked-in</SelectItem>
                         <SelectItem value="Checked-out">Checked-out</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="type-add">Type</Label>
+                    <Select name="type" defaultValue="Hotel">
+                      <SelectTrigger id="type-add">
+                        <SelectValue placeholder="Select a type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Hotel">Hotel</SelectItem>
+                        <SelectItem value="Lodge">Lodge</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

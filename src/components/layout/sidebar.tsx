@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -15,7 +16,6 @@ import {
   LayoutDashboard,
   Users,
   BedDouble,
-  UtensilsCrossed,
   Warehouse,
   UsersRound,
   CreditCard,
@@ -32,8 +32,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppSidebar as AppSidebarWrapper } from './sidebar-wrapper';
 
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Restaurant Staff' | 'Chef/Kitchen' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Chef' | 'Staff';
-type OrganisationType = 'Hotel' | 'Lodge' | 'Restaurant' | null;
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance';
+type OrganisationType = 'Hotel' | 'Lodge' | null;
 
 type NavLink = {
     href: string;
@@ -45,37 +45,27 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+    { href: "/", icon: LayoutDashboard, label: "Dashboard", roles: ['Admin'], entities: ['Hotel', 'Lodge']},
     { href: "/guests", icon: Users, label: "Front Office", roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge']},
     { href: "/housekeeping", icon: BedDouble, label: "Housekeeping", roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge']},
-    { 
-        href: "/restaurant", 
-        icon: UtensilsCrossed, 
-        label: "Restaurant & F&B", 
-        roles: ['Admin', 'Restaurant Staff', 'Chef/Kitchen', 'Chef', 'Staff'], 
-        entities: ['Hotel', 'Restaurant'],
-        subItems: [
-            { href: "/restaurant/orders", icon: UtensilsCrossed, label: "Kitchen Display", roles: ['Admin', 'Chef/Kitchen', 'Chef'], entities: ['Hotel', 'Restaurant'] }
-        ]
-    },
-    { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/inventory", icon: Warehouse, label: "Procurement", roles: ['Admin', 'Inventory Manager'], entities: ['Hotel', 'Lodge'] },
     { 
         href: "/staff", 
         icon: UsersRound, 
         label: "HR Management", 
         roles: ['Admin', 'HR Manager', 'Maintenance Team'], 
-        entities: ['Hotel', 'Lodge', 'Restaurant'],
+        entities: ['Hotel', 'Lodge'],
         subItems: [
-             { href: "/staff/schedule", icon: CalendarDays, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
-             { href: "/staff/attendance", icon: Timer, label: "Attendance Log", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']}
+             { href: "/staff/schedule", icon: CalendarDays, label: "Shift Scheduler", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge']},
+             { href: "/staff/attendance", icon: Timer, label: "Attendance Log", roles: ['Admin', 'HR Manager'], entities: ['Hotel', 'Lodge']}
         ]
     },
-    { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge', 'Restaurant']},
+    { href: "/billing", icon: CreditCard, label: "Finance", roles: ['Admin', 'Finance Manager', 'Finance'], entities: ['Hotel', 'Lodge']},
     { href: "/revenue", icon: TrendingUp, label: "Revenue", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
-    { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/guest-portal", icon: HeartPulse, label: "Guest Loyalty", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
     { href: "/security", icon: Shield, label: "Security", roles: ['Admin', 'Security Staff'], entities: ['Hotel', 'Lodge']},
-    { href: "/reporting", icon: LineChart, label: "Analytics", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge', 'Restaurant']},
-    { href: "/integrations", icon: Plug, label: "Integrations", roles: ['Admin'], entities: ['Hotel', 'Lodge', 'Restaurant'] },
+    { href: "/reporting", icon: LineChart, label: "Analytics", roles: ['Admin', 'Finance Manager'], entities: ['Hotel', 'Lodge']},
+    { href: "/integrations", icon: Plug, label: "Integrations", roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
 ];
 
 

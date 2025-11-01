@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BedDouble, BookOpenCheck, Bot, Building, ChefHat, UtensilsCrossed, Users, Wrench, Sparkles, Trash2, Clock } from "lucide-react";
+import { BedDouble, BookOpenCheck, Bot, Building, Users, Wrench, Sparkles, Trash2, Clock } from "lucide-react";
 import { placeholderImages } from "@/lib/placeholder-images";
 import { BookingsChart } from "@/components/dashboard/bookings-chart";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -33,7 +33,7 @@ const recentBookings = [
     name: "Sam Wilson",
     email: "sam.wilson@example.com",
     avatar: placeholderImages.find(p => p.id === 'user-avatar-3')?.imageUrl || '',
-    type: "Restaurant",
+    type: "Lodge",
     status: "Completed",
     amount: "₹4,500"
   },
@@ -48,7 +48,7 @@ function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Hotel Occupancy" value="78%" icon={<Building className="size-6" />} description="+5% from last week" />
           <StatCard title="Lodge Occupancy" value="62%" icon={<BedDouble className="size-6" />} description="-2% from last week" />
-          <StatCard title="Table Availability" value="12 / 30" icon={<UtensilsCrossed className="size-6" />} description="5 new reservations" />
+          <StatCard title="Pending Tasks" value={maintenanceTasks.length.toString()} icon={<Wrench className="size-6" />} description="3 overdue" />
           <StatCard title="Pending KYC" value="8" icon={<Users className="size-6" />} description="2 overdue" variant="destructive" />
         </div>
 
@@ -81,13 +81,6 @@ function DashboardPage() {
                     <span className="text-sm">Today's Bookings</span>
                   </div>
                   <span className="font-bold text-lg">42</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ChefHat className="text-muted-foreground" />
-                    <span className="text-sm">Restaurant Orders</span>
-                  </div>
-                  <span className="font-bold text-lg">112</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

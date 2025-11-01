@@ -16,16 +16,14 @@ import { useFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { createUserProfile } from "@/services/user-service";
 
-type OrganisationType = "Hotel" | "Lodge" | "Restaurant";
-type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Restaurant Staff' | 'Chef/Kitchen' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance' | 'Chef' | 'Staff';
+type OrganisationType = "Hotel" | "Lodge";
+type Role = 'Admin' | 'Front Office Staff' | 'Housekeeping' | 'Maintenance Team' | 'Inventory Manager' | 'HR Manager' | 'Finance Manager' | 'Security Staff' | 'Guest' | 'Receptionist' | 'Finance';
 
 const allRoles: { value: Role, label: string }[] = [
     { value: 'Admin', label: 'Admin (Full Access)' },
     { value: 'Front Office Staff', label: 'Front Office Staff' },
     { value: 'Housekeeping', label: 'Housekeeping' },
     { value: 'Maintenance Team', label: 'Maintenance Team' },
-    { value: 'Restaurant Staff', label: 'Restaurant Staff' },
-    { value: 'Chef/Kitchen', label: 'Chef/Kitchen' },
     { value: 'Inventory Manager', label: 'Inventory Manager' },
     { value: 'HR Manager', label: 'HR Manager' },
     { value: 'Finance Manager', label: 'Finance Manager' },
@@ -34,9 +32,6 @@ const allRoles: { value: Role, label: string }[] = [
     // Lodge specific roles can be mapped from these
     { value: 'Receptionist', label: 'Receptionist' },
     { value: 'Finance', label: 'Finance Officer' },
-    // Restaurant specific roles
-    { value: 'Chef', label: 'Chef' },
-    { value: 'Staff', label: 'General Staff' },
 ];
 
 
@@ -55,7 +50,7 @@ function RegisterPage() {
   const availableRoles = useMemo(() => {
     switch (organisationType) {
         case 'Hotel':
-            return allRoles.filter(r => !['Receptionist', 'Finance', 'Chef', 'Staff'].includes(r.value));
+            return allRoles.filter(r => !['Receptionist', 'Finance'].includes(r.value));
         case 'Lodge':
             return [
                 { value: 'Admin', label: 'Manager (Admin)' },
@@ -63,12 +58,6 @@ function RegisterPage() {
                 { value: 'Housekeeping', label: 'Housekeeping' },
                 { value: 'Finance', label: 'Finance Officer' },
                 { value: 'Guest', label: 'Guest' },
-            ];
-        case 'Restaurant':
-            return [
-                { value: 'Admin', label: 'Manager (Admin)' },
-                { value: 'Chef', label: 'Chef' },
-                { value: 'Staff', label: 'General Staff' },
             ];
         default:
             return [];
@@ -122,7 +111,7 @@ function RegisterPage() {
     }
   };
 
-  const organisationTypes: OrganisationType[] = ["Hotel", "Lodge", "Restaurant"];
+  const organisationTypes: OrganisationType[] = ["Hotel", "Lodge"];
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -199,5 +188,3 @@ function RegisterPage() {
 }
 
 export default withAuth(RegisterPage);
-
-    
