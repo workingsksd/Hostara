@@ -48,7 +48,7 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow read, update: if isOwner(userId);
-      allow create: if isSignedIn();
+      allow create: if request.auth.uid == userId;
     }
 
     /**
@@ -105,11 +105,6 @@ service cloud.firestore {
      */
     match /restaurantOrders/{orderId} {
         allow read, write: if requestIsInOrg(['Restaurant']) && requestHasRole(['Admin', 'Restaurant Manager', 'Chef', 'Waiter']);
-    }
-
-    // Deny all other access by default
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }
