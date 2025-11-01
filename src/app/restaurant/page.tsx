@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useContext } from 'react';
@@ -333,7 +332,7 @@ function RestaurantPage() {
                     </DropdownMenu>
                 </div>
                 <div className="relative aspect-video">
-                  <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+                  <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="food dish" />
                 </div>
                  <div className="p-4">
                     <CardTitle className="font-headline text-xl">{item.name}</CardTitle>
