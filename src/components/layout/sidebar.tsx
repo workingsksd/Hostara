@@ -94,24 +94,35 @@ export function AppSidebar() {
   }, []);
 
   const hasAccess = (link: NavLink) => {
-    // 1. A user must have a role and be in an organization to see any link.
     if (!userRole || !organisationType) {
-      return false;
+      return false; // Cannot determine access without role or org type
     }
-
-    // 2. The link must be applicable to the user's organization type.
+  
+    // Check 1: Does the link apply to the user's organization type?
     if (!link.entities.includes(organisationType)) {
       return false;
     }
-
-    // 3. Admin role has universal access to their organization's applicable links.
+  
+    // Check 2: If the user is an Admin, they have access to everything for their org type.
     if (userRole === 'Admin') {
+      // But Restaurant Admins shouldn't see the main Hotel/Lodge dashboard
+      if (organisationType === 'Restaurant' && link.href === '/') {
+        return false;
+      }
+      // And Hotel/Lodge Admins shouldn't see the main Restaurant dashboard
+      if ((organisationType === 'Hotel' || organisationType === 'Lodge') && link.href === '/restaurant') {
+        return false;
+      }
       return true;
     }
-
-    // 4. For non-admin roles, check if their role is explicitly listed in the link's roles.
-    return link.roles.includes(userRole);
-  }
+  
+    // Check 3: For non-admin roles, check if their role is explicitly allowed by the link.
+    if (link.roles.includes(userRole)) {
+      return true;
+    }
+  
+    return false;
+  };
 
   return (
     <AppSidebarWrapper>
@@ -133,12 +144,15 @@ export function AppSidebar() {
             const isSubActive = link.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
             const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
             
+            // Special case for root, so it's not always active
+            const finalIsActive = link.href === '/' ? pathname === '/' : isActive;
+
             return (
                 <SidebarMenuItem key={link.href}>
                     <SidebarMenuButton 
                       asChild={!link.subItems}
                       tooltip={link.label} 
-                      isActive={isActive || isSubActive}
+                      isActive={finalIsActive || isSubActive}
                       >
                       <Link href={link.href}>
                           <link.icon />
