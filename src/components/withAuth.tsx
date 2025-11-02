@@ -13,6 +13,7 @@ const pagePermissions: { [key: string]: { roles: Role[], entities: OrganisationT
     '/': { roles: ['Admin'], entities: ['Hotel', 'Lodge'] },
     '/restaurant': { roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant'] },
     '/restaurant/orders': { roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant'] },
+    '/restaurant/menu': { roles: ['Admin', 'Restaurant Manager'], entities: ['Restaurant'] },
     '/guests': { roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge'] },
     '/guests/kyc': { roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge'] },
     '/housekeeping': { roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge'] },
@@ -83,7 +84,8 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
       
       const basePath = Object.keys(pagePermissions).find(key => {
         if (key === '/') return pathname === '/';
-        return pathname.startsWith(key);
+        if (key.endsWith('/')) return pathname.startsWith(key);
+        return pathname.startsWith(`${key}/`) || pathname === key;
       }) || pathname;
       
       const permissions = pagePermissions[basePath];
@@ -140,3 +142,5 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
 };
 
 export default withAuth;
+
+    

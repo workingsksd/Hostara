@@ -126,6 +126,7 @@ export type AttendanceRecord = {
 export type RecipeIngredient = {
     itemId: string; // ID of the inventory item
     quantity: number; // Quantity of the item used in the recipe
+    name: string; // Name of the inventory item
 };
 
 export type MenuItem = {
@@ -250,8 +251,8 @@ const initialShifts: Shift[] = [
 ];
 
 const initialMenu: MenuItem[] = [
-    { id: 'menu-1', name: 'Paneer Butter Masala', price: 450, category: 'Main Course', recipe: [{ itemId: 'inv-2', quantity: 0.2 }, { itemId: 'inv-1', quantity: 0.3 }, { itemId: 'inv-7', quantity: 0.05 }, { itemId: 'inv-8', quantity: 0.01 }] },
-    { id: 'menu-2', name: 'Chicken Tikka', price: 550, category: 'Appetizer', recipe: [{ itemId: 'inv-6', quantity: 0.25 }, { itemId: 'inv-8', quantity: 0.02 }] },
+    { id: 'menu-1', name: 'Paneer Butter Masala', price: 450, category: 'Main Course', recipe: [{ itemId: 'inv-2', quantity: 0.2, name: 'Paneer' }, { itemId: 'inv-1', quantity: 0.3, name: 'Tomatoes' }, { itemId: 'inv-7', quantity: 0.05, name: 'Cream' }, { itemId: 'inv-8', quantity: 0.01, name: 'Garam Masala' }] },
+    { id: 'menu-2', name: 'Chicken Tikka', price: 550, category: 'Appetizer', recipe: [{ itemId: 'inv-6', quantity: 0.25, name: 'Chicken Breast' }, { itemId: 'inv-8', quantity: 0.02, name: 'Garam Masala' }] },
     { id: 'menu-3', name: 'Garlic Naan', price: 90, category: 'Main Course', recipe: [] },
     { id: 'menu-4', name: 'Gulab Jamun', price: 150, category: 'Dessert', recipe: [] },
     { id: 'menu-5', name: 'Mineral Water', price: 50, category: 'Beverage', recipe: [] },
@@ -300,6 +301,9 @@ interface BookingContextType {
   addOrder: (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   addExternalOrder: (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => void;
+  addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
+  updateMenuItem: (item: MenuItem) => void;
+  deleteMenuItem: (itemId: string) => void;
 }
 
 export const BookingContext = createContext<BookingContextType>({
@@ -337,6 +341,9 @@ export const BookingContext = createContext<BookingContextType>({
   addOrder: () => {},
   updateOrderStatus: () => {},
   addExternalOrder: () => {},
+  addMenuItem: () => {},
+  updateMenuItem: () => {},
+  deleteMenuItem: () => {},
 });
 
 export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -611,6 +618,19 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }));
   };
 
+  const addMenuItem = (item: Omit<MenuItem, 'id'>) => {
+    const newItem: MenuItem = { ...item, id: `menu-${Date.now()}` };
+    setMenu(prev => [newItem, ...prev]);
+  };
+
+  const updateMenuItem = (updatedItem: MenuItem) => {
+    setMenu(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+  };
+
+  const deleteMenuItem = (itemId: string) => {
+    setMenu(prev => prev.filter(item => item.id !== itemId));
+  };
+
   return (
     <BookingContext.Provider value={{ 
         bookings, addBooking, updateBooking, deleteBooking, 
@@ -622,9 +642,12 @@ export const BookingProvider: FC<{ children: ReactNode }> = ({ children }) => {
         inventory, purchaseOrders, addPurchaseOrder, updatePurchaseOrderStatus, receiveStock,
         staff, shifts, schedule, updateSchedule,
         attendanceLog, clockIn, clockOut,
-        menu, orders, tables, addOrder, updateOrderStatus, addExternalOrder
+        menu, orders, tables, addOrder, updateOrderStatus, addExternalOrder,
+        addMenuItem, updateMenuItem, deleteMenuItem
     }}>
       {children}
     </BookingContext.Provider>
   );
 };
+
+    

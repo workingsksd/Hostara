@@ -28,7 +28,8 @@ import {
   CalendarDays,
   Timer,
   Utensils,
-  CookingPot
+  CookingPot,
+  ClipboardList
 } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { AppSidebar as AppSidebarWrapper } from './sidebar-wrapper';
@@ -57,6 +58,7 @@ const navLinks: NavLink[] = [
       entities: ['Restaurant'],
     },
     { href: "/restaurant/orders", icon: CookingPot, label: "Kitchen Display", roles: ['Admin', 'Restaurant Manager', 'Chef', 'Waiter'], entities: ['Restaurant']},
+    { href: "/restaurant/menu", icon: ClipboardList, label: "Menu Management", roles: ['Admin', 'Restaurant Manager'], entities: ['Restaurant']},
     { href: "/guests", icon: Users, label: "Front Office", roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge']},
     { href: "/guests/kyc", icon: Shield, label: "KYC Scanner", roles: ['Admin', 'Front Office Staff', 'Receptionist'], entities: ['Hotel', 'Lodge']},
     { href: "/housekeeping", icon: BedDouble, label: "Housekeeping", roles: ['Admin', 'Housekeeping'], entities: ['Hotel', 'Lodge']},
@@ -166,3 +168,5 @@ export function AppSidebar() {
     </AppSidebarWrapper>
   )
 }
+
+    
