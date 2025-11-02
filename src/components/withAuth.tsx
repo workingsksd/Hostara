@@ -102,7 +102,7 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
     }, [router, pathname, user, loading]);
 
 
-    if (loading || (!user && !(pathname.startsWith('/login') || pathname.startsWith('/register')))) {
+    if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="text-lg font-semibold">Loading...</div>
@@ -110,8 +110,17 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         );
     }
     
-    // If the user's profile is loaded and they are on an auth page, don't render the component
-    if (user && (pathname.startsWith('/login') || pathname.startsWith('/register'))) {
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+
+    if (!user && !isAuthPage) {
+         return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="text-lg font-semibold">Loading...</div>
+            </div>
+        );
+    }
+
+    if (user && isAuthPage) {
         return (
              <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="text-lg font-semibold">Redirecting...</div>
