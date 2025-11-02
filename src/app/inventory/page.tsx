@@ -45,6 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BookingContext, InventoryItem, Vendor, PurchaseOrderItem, PurchaseOrder } from "@/context/BookingContext";
 import { format } from "date-fns";
 import { PredictiveInventory } from "@/components/inventory/predictive-inventory";
+import { Badge } from "@/components/ui/badge";
 
 function InventoryPage() {
   const { 
