@@ -81,7 +81,10 @@ const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) =>
         return;
       }
       
-      const basePath = Object.keys(pagePermissions).find(key => key !== '/' && pathname.startsWith(key)) || pathname;
+      const basePath = Object.keys(pagePermissions).find(key => {
+        if (key === '/') return pathname === '/';
+        return pathname.startsWith(key);
+      }) || pathname;
       
       const permissions = pagePermissions[basePath];
 
