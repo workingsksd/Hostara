@@ -1,6 +1,6 @@
 
 'use client'
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import withAuth from "@/components/withAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -50,9 +50,15 @@ function DashboardPage() {
   
   const organisationType = user?.profile.organisationType;
 
+  useEffect(() => {
+    if (organisationType === 'Restaurant') {
+      // Redirect to the restaurant page if the user is in a restaurant org
+      router.replace('/restaurant');
+    }
+  }, [organisationType, router]);
+
+
   if (organisationType === 'Restaurant') {
-    // Redirect to the restaurant page if the user is in a restaurant org
-    router.replace('/restaurant');
     return (
         <div className="flex items-center justify-center min-h-screen bg-background">
           <div className="text-lg font-semibold">Loading Restaurant Dashboard...</div>
