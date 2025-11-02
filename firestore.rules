@@ -47,8 +47,11 @@ service cloud.firestore {
      * @principle Users can create and manage their own profile.
      */
     match /users/{userId} {
+      // A user can only read or update their own profile.
       allow read, update: if isOwner(userId);
-      allow create: if isOwner(userId);
+      // A user can only create a profile document where the document ID matches their own UID
+      // and the data's uid field also matches. This is the most secure way for creation.
+      allow create: if request.auth.uid == userId && request.resource.data.uid == userId;
     }
 
     /**
